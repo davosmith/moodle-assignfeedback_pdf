@@ -1,7 +1,7 @@
-var currentcomment = null;	// The comment that is currently being edited
-var editbox = null;		// The edit box that is currently displayed
-var resizing = false;		// A box is being resized (so disable dragging)
-var server = null;		// The object use to send data back to the server
+var currentcomment = null; // The comment that is currently being edited
+var editbox = null; // The edit box that is currently displayed
+var resizing = false; // A box is being resized (so disable dragging)
+var server = null; // The object use to send data back to the server
 var context_quicklist = null;
 var context_comment = null;
 var quicklist = null; // Stores all the comments in the quicklist
@@ -27,12 +27,11 @@ var currentpaper = null;
 var currentline = null;
 var linestartpos = null;
 var freehandpoints = null;
-//var lineselect = null;
-//var lineselectid = null;
-var allannotations = new Array();
 
-const LINEWIDTH = 3.0;
-const HIGHLIGHT_LINEWIDTH = 14.0;
+var allannotations = [];
+
+var LINEWIDTH = 3.0;
+var HIGHLIGHT_LINEWIDTH = 14.0;
 
 var $defined = function(obj) { return (obj != undefined); };
 
@@ -198,7 +197,7 @@ var ServerComm = new Class({
                         resp.annotations.each(function(annotation) {
                             var coords;
                             if (annotation.type == 'freehand') {
-                                coords = new Array();
+                                coords = [];
                                 points = annotation.path.split(',');
                                 for (var i=0; (i+1)<points.length; i+=2) {
                                     coords.push({x:points[i].toInt(), y:points[i+1].toInt()});
@@ -383,7 +382,7 @@ var ServerComm = new Class({
                 server.retrycount = 0;
                 if (resp.error == 0) {
                     pagesremaining--;
-                    pagelist[pageno] = new Object();
+                    pagelist[pageno] = {};
                     pagelist[pageno].url = resp.image.url;
                     pagelist[pageno].width = resp.image.width;
                     pagelist[pageno].height = resp.image.height;
@@ -443,10 +442,6 @@ var ServerComm = new Class({
                 if (resp.error == 0) {
                     if (details.id < 0) { // A new line
                         annotation.store('id', resp.id);
-                        //if ($defined(lineselect) && (annotation.retrieve("paper") == lineselect.paper)) {
-                        //  unselectline();
-                        //  annotation.fireEvent('click');
-                        //}
                     }
                 } else {
                     if (confirm(server_config.lang_errormessage+resp.errmsg+'\n'+server_config.lang_okagain)) {
@@ -740,8 +735,6 @@ function editcomment(el) {
     if (!server.editing) {
         return;
     }
-    //unselectline();
-
     if (currentcomment == el) {
         return;
     }
@@ -916,24 +909,6 @@ function setlinecolour(colour, line, currenttool) {
 }
 
 function changelinecolour(e) {
-    /*
-     if ($defined(lineselect)) {
-     var canvas = document.id(lineselect.paper.canvas);
-     if (!lineselectid) {
-     // Cannot change the colour before the server has responded
-     setcurrentlinecolour(canvas.retrieve("colour"));
-     } else {
-     var canvas = document.id(lineselect.paper.canvas);
-     var line = canvas.retrieve("line");
-     var colour = getcurrentlinecolour();
-     if (canvas.retrieve("colour") != colour) {
-     setlinecolour(colour, line);
-     canvas.store("colour", colour);
-     server.addannotation({type: "line", colour: colour, id: canvas.retrieve("id"), coords: {sx:-1,sy:-1,ex:-1,ey:-1} }, canvas);
-     }
-     }
-     }
-     */
     if (!server.editing) {
         return;
     }
@@ -951,14 +926,17 @@ function getstampimage(stamp) {
     return server_config.image_path+'stamps/'+stamp+'.png';
 }
 
-function setcurrentstamp(stamp) {
+function setcurrentstamp(stamp, settool) {
     if (!server.editing) {
         return;
     }
     // Check valid stamp?
     stampmenu.set("label", '<img width="32" height="32" src="'+getstampimage(stamp)+'" />');
     stampmenu.set("value", stamp);
-    changestamp();
+    if (settool === undefined) {
+        settool = true;
+    }
+    changestamp(settool);
 }
 
 function changestamp(e) {
@@ -966,7 +944,9 @@ function changestamp(e) {
         return;
     }
     Cookie.write('uploadpdf_stamp', getcurrentstamp());
-    setcurrenttool('stamp');
+    if (e !== false) {
+        setcurrenttool('stamp');
+    }
 }
 
 function getcurrenttool() {
@@ -1337,51 +1317,6 @@ function makeline(coords, type, id, colour, stamp) {
     allannotations.push(container);
 }
 
-/*
- function selectline(e) {
- var paper = this.retrieve('paper'); // Note this will not work
- var width = this.retrieve('width');
- var height = this.retrieve('height');
- lineselectid = this.retrieve('id');
- if (!lineselectid) {
- colour = "#f44";
- } else {
- colour = "#555";
- }
- lineselect = paper.rect(1,1,width-2,height-2).attr({stroke: colour, "stroke-dasharray": "- ", "stroke-width": 1, fill: null});
-
- updatelastcomment(); // In case we were editing a comment at the time
- document.addEvent('keydown', checkdeleteline);
- var linecolour = this.retrieve('colour');
- setcurrentlinecolour(linecolour);
- }
-
- function unselectline() {
- if ($defined(lineselect)) {
- lineselect.remove();
- lineselect = null;
- lineselectid = null;
- document.removeEvent('keydown', checkdeleteline);
- }
- }
-
- function checkdeleteline(e) {
- if (e.key == 'delete') {
- if ($defined(lineselect)) {
- if (lineselectid) {
- var paper = lineselect.paper;
- allannotations.erase(paper);
- paper.remove();
- lineselect = null;
- document.removeEvent('keydown', checkdeleteline);
- server.removeannotation(lineselectid);
- lineselectid = null;
- }
- }
- }
- }
- */
-
 function eraseline(e) {
     if (!server.editing) {
         return;
@@ -1568,7 +1503,7 @@ function startjs() {
 
     server = new ServerComm(server_config);
 
-    document.body.className += ' yui-skin-sam';
+    document.body.className += ' yui-skin-sam'; // TODO davo - check if still needed
 
     if (server.editing) {
         if (document.getElementById('choosecolour')) {
@@ -1678,7 +1613,7 @@ function startjs() {
         if (!$defined(stamp)) {
             stamp = 'tick';
         }
-        setcurrentstamp(stamp);
+        setcurrentstamp(stamp, false);
     }
 
     // Start preloading pages if using js navigation method
@@ -1799,7 +1734,7 @@ function initcontextmenu() {
     context_quicklist.addmenu(document.id('pdfimg'));
     context_quicklist.quickcount = 0;
     context_quicklistnoitems();
-    quicklist = new Array();
+    quicklist = [];
 
     if (Browser.ie6 || Browser.ie7) {
         // Hack to draw the separator line correctly in IE7 and below

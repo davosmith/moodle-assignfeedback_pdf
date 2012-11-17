@@ -301,10 +301,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         list($imageurl, $imgwidth, $imgheight, $pagecount) = $this->get_page_image($pageno, $submission);
 
-        $PAGE->requires->js('/mod/assignment/type/uploadpdf/scripts/mootools-core-1.4.1.js');
-        $PAGE->requires->js('/mod/assignment/type/uploadpdf/scripts/mootools-more-1.4.0.1.js');
-        $PAGE->requires->js('/mod/assignment/type/uploadpdf/scripts/raphael-min.js');
-        $PAGE->requires->js('/mod/assignment/type/uploadpdf/scripts/contextmenu.js');
+        $PAGE->requires->js('/mod/assign/feedback/pdf/scripts/mootools-core-1.4.1.js');
+        $PAGE->requires->js('/mod/assign/feedback/pdf/scripts/mootools-more-1.4.0.1.js');
+        $PAGE->requires->js('/mod/assign/feedback/pdf/scripts/raphael-min.js');
+        $PAGE->requires->js('/mod/assign/feedback/pdf/scripts/contextmenu.js');
 
         //$PAGE->set_pagelayout('popup');
         $PAGE->set_title(get_string('feedback', 'assignment').':'.fullname($user, true).':'.format_string($assignment->name));
@@ -312,7 +312,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         echo $OUTPUT->header();
 
-        echo $this->output_controls($submission, $user, $enableedit, $showprevious);
+        echo $this->output_controls($submission, $user, $pageno, $enableedit, $showprevious);
 
         $pageselector = ''; // TODO davo - fix this properly
 
@@ -327,45 +327,45 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         echo '<br/>';
         echo $pageselector;
         if ($enableedit) {
-            echo '<p><a id="opennewwindow" target="_blank" href="editcomment.php?id='.$cm->id.'&amp;userid='.$userid.'&amp;pageno='. $pageno .'&amp;showprevious='.$showprevious.'">'.get_string('opennewwindow','assignment_uploadpdf').'</a></p>';
+            echo '<p><a id="opennewwindow" target="_blank" href="editcomment.php?id='.$cm->id.'&amp;userid='.$userid.'&amp;pageno='. $pageno .'&amp;showprevious='.$showprevious.'">'.get_string('opennewwindow','assignfeedback_pdf').'</a></p>';
         }
         echo '<br style="clear:both;" />';
 
         if ($enableedit) {
             // Definitions for the right-click menus
-            echo '<ul class="contextmenu" style="display: none;" id="context-quicklist"><li class="separator">'.get_string('quicklist','assignment_uploadpdf').'</li></ul>';
-            echo '<ul class="contextmenu" style="display: none;" id="context-comment"><li><a href="#addtoquicklist">'.get_string('addquicklist','assignment_uploadpdf').'</a></li>';
-            echo '<li class="separator"><a href="#red">'.get_string('colourred','assignment_uploadpdf').'</a></li>';
-            echo '<li><a href="#yellow">'.get_string('colouryellow','assignment_uploadpdf').'</a></li>';
-            echo '<li><a href="#green">'.get_string('colourgreen','assignment_uploadpdf').'</a></li>';
-            echo '<li><a href="#blue">'.get_string('colourblue','assignment_uploadpdf').'</a></li>';
-            echo '<li><a href="#white">'.get_string('colourwhite','assignment_uploadpdf').'</a></li>';
-            echo '<li><a href="#clear">'.get_string('colourclear','assignment_uploadpdf').'</a></li>';
-            echo '<li class="separator"><a href="#deletecomment">'.get_string('deletecomment','assignment_uploadpdf').'</a></li>';
+            echo '<ul class="contextmenu" style="display: none;" id="context-quicklist"><li class="separator">'.get_string('quicklist','assignfeedback_pdf').'</li></ul>';
+            echo '<ul class="contextmenu" style="display: none;" id="context-comment"><li><a href="#addtoquicklist">'.get_string('addquicklist','assignfeedback_pdf').'</a></li>';
+            echo '<li class="separator"><a href="#red">'.get_string('colourred','assignfeedback_pdf').'</a></li>';
+            echo '<li><a href="#yellow">'.get_string('colouryellow','assignfeedback_pdf').'</a></li>';
+            echo '<li><a href="#green">'.get_string('colourgreen','assignfeedback_pdf').'</a></li>';
+            echo '<li><a href="#blue">'.get_string('colourblue','assignfeedback_pdf').'</a></li>';
+            echo '<li><a href="#white">'.get_string('colourwhite','assignfeedback_pdf').'</a></li>';
+            echo '<li><a href="#clear">'.get_string('colourclear','assignfeedback_pdf').'</a></li>';
+            echo '<li class="separator"><a href="#deletecomment">'.get_string('deletecomment','assignfeedback_pdf').'</a></li>';
             echo '</ul>';
         }
 
         // Definition for 'resend' box
-        echo '<div id="sendfailed" style="display: none;"><p>'.get_string('servercommfailed','assignment_uploadpdf').'</p><button id="sendagain">'.get_string('resend','assignment_uploadpdf').'</button><button onClick="hidesendfailed();">'.get_string('cancel','assignment_uploadpdf').'</button></div>';
+        echo '<div id="sendfailed" style="display: none;"><p>'.get_string('servercommfailed','assignfeedback_pdf').'</p><button id="sendagain">'.get_string('resend','assignfeedback_pdf').'</button><button onClick="hidesendfailed();">'.get_string('cancel','assignfeedback_pdf').'</button></div>';
 
         $server = array(
             'id' => $cm->id,
             'userid' => $userid,
             'pageno' => $pageno,
             'sesskey' => sesskey(),
-            'updatepage' => $CFG->wwwroot.'/mod/assignment/type/uploadpdf/updatecomment.php',
-            'lang_servercommfailed' => get_string('servercommfailed', 'assignment_uploadpdf'),
-            'lang_errormessage' => get_string('errormessage', 'assignment_uploadpdf'),
-            'lang_okagain' => get_string('okagain', 'assignment_uploadpdf'),
-            'lang_emptyquicklist' => get_string('emptyquicklist', 'assignment_uploadpdf'),
-            'lang_emptyquicklist_instructions' => get_string('emptyquicklist_instructions', 'assignment_uploadpdf'),
+            'updatepage' => $CFG->wwwroot.'/mod/assign/feedback/pdf/updatecomment.php',
+            'lang_servercommfailed' => get_string('servercommfailed', 'assignfeedback_pdf'),
+            'lang_errormessage' => get_string('errormessage', 'assignfeedback_pdf'),
+            'lang_okagain' => get_string('okagain', 'assignfeedback_pdf'),
+            'lang_emptyquicklist' => get_string('emptyquicklist', 'assignfeedback_pdf'),
+            'lang_emptyquicklist_instructions' => get_string('emptyquicklist_instructions', 'assignfeedback_pdf'),
             'deleteicon' => $OUTPUT->pix_url('/t/delete'),
             'pagecount' => $pagecount,
             'blank_image' => $CFG->wwwroot.'/mod/assignment/type/uploadpdf/style/blank.gif',
             'image_path' => $CFG->wwwroot.'/mod/assignment/type/uploadpdf/pix/',
             'css_path' => $CFG->wwwroot.'/lib/yui/'.$CFG->yui2version.'/build/assets/skins/sam/',
             'editing' => ($enableedit ? 1 : 0),
-            'lang_nocomments' => get_string('findcommentsempty', 'assignment_uploadpdf')
+            'lang_nocomments' => get_string('findcommentsempty', 'assignfeedback_pdf')
         );
 
         echo '<script type="text/javascript">server_config = {';
@@ -375,8 +375,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         echo "ignore: ''\n"; // Just there so IE does not complain
         echo '};</script>';
 
-        $jsmodule = array('name' => 'assignment_uploadpdf',
-                          'fullpath' => new moodle_url('/mod/assignment/type/uploadpdf/scripts/annotate.js'),
+        $jsmodule = array('name' => 'assignfeedback_pdf',
+                          'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
                           'requires' => array('yui2-yahoo-dom-event', 'yui2-container', 'yui2-element',
                                               'yui2-button', 'yui2-menu', 'yui2-utilities'));
         $PAGE->requires->js_init_call('uploadpdf_init', null, true, $jsmodule);
@@ -384,7 +384,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         echo $OUTPUT->footer();
     }
 
-    protected function output_controls($submission, $user, $enableedit, $showprevious) {
+    protected function output_controls($submission, $user, $pageno, $enableedit, $showprevious) {
         global $PAGE, $DB, $OUTPUT;
 
         $context = $this->assignment->get_context();
@@ -398,18 +398,18 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $saveopts .= html_writer::input_hidden_params($PAGE->url);
             $img = $OUTPUT->pix_icon('savequit', '', 'assignfeedback_pdf');
             $saveopts .= html_writer::tag('button', $img, array('type' => 'submit', 'name' => 'savedraft',
-                                                               'value' => 'savedraft',
+                                                               'value' => 'savedraft', 'id' => 'savedraft',
                                                                'title' => get_string('savedraft', 'assignfeedback_pdf')));
             $img = $OUTPUT->pix_icon('tostudent', '', 'assignfeedback_pdf');
             $saveopts .= html_writer::tag('button', $img, array('type' => 'submit', 'name' => 'generateresponse',
-                                                               'value' => 'generateresponse',
+                                                               'value' => 'generateresponse', 'id' => 'generateresponse',
                                                                'title' => get_string('generateresponse', 'assignfeedback_pdf')));
         }
 
         // 'Download original' button
         $pdfurl = moodle_url::make_pluginfile_url($context->id, 'assignsubmission_pdf', ASSIGNSUBMISSION_PDF_FA_FINAL,
                                                   $submission->id, '/', ASSIGNSUBMISSION_PDF_FILENAME, true);
-        $downloadorig = get_string('downloadoriginal', 'assignment_uploadpdf');
+        $downloadorig = get_string('downloadoriginal', 'assignfeedback_pdf');
         if (!$enableedit) {
             $pdfurl = moodle_url::make_pluginfile_url($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE,
                                                       $submission->id, '/', ASSIGNFEEDBACK_PDF_FILENAME, true);
@@ -436,7 +436,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $course = $this->assignment->get_course();
             $previoussubs = $DB->get_records_sql_menu($ps_sql, array($course->id, $user->id, $assignment->id) );
             if ($previoussubs) {
-                $showpreviousstr = get_string('showpreviousassignment','assignment_uploadpdf');;
+                $showpreviousstr = get_string('showpreviousassignment','assignfeedback_pdf');;
                 $saveopts .= html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'showpreviousbutton',
                                                              'name' => 'showpreviousbutton', 'value' => $showpreviousstr));
                 $saveopts .= html_writer::select($previoussubs, 'showprevious', $showprevious,
@@ -446,10 +446,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
 
         $comments = $DB->get_records('assignfeedback_pdf_cmnt', array('submissionid' => $submission->id), 'pageno, posy, posx');
-        $saveopts .= html_writer::tag('button', get_string('findcomments','assignment_uploadpdf'),
+        $saveopts .= html_writer::tag('button', get_string('findcomments','assignfeedback_pdf'),
                                       array('id' => 'findcommentsbutton'));
         if (empty($comments)) {
-            $outcomments = array('0:0' => get_string('findcommentsempty', 'assignment_uploadpdf'));
+            $outcomments = array('0:0' => get_string('findcommentsempty', 'assignfeedback_pdf'));
         } else {
             $outcomments = array();
             foreach ($comments as $comment) {
@@ -468,86 +468,116 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             // If opening in same window - show 'back to comment list' link
             if (array_key_exists('uploadpdf_commentnewwindow', $_COOKIE) && !$_COOKIE['uploadpdf_commentnewwindow']) {
                 $url = "editcomment.php?a={$this->assignment->id}&amp;userid={$userid}&amp;action=showprevious";
-                echo '<a href="'.$url.'">'.get_string('backtocommentlist','assignment_uploadpdf').'</a>';
+                echo '<a href="'.$url.'">'.get_string('backtocommentlist','assignfeedback_pdf').'</a>';
             }
             */
         }
 
         $out .= html_writer::tag('div', $saveopts, array('id' => 'saveoptions'));
 
-        // TODO davo - review the 2nd line of the toolbar
-        /*
-        echo '<div id="toolbar-line2">';
+        $prevstr = '&lt;-- '.get_string('previous', 'assignfeedback_pdf');
+        $prevtipstr = get_string('keyboardprev', 'assignfeedback_pdf');
+        $nextstr = get_string('next', 'assignfeedback_pdf').' --&gt;';
+        $nexttipstr = get_string('keyboardnext', 'assignfeedback_pdf');
+        $pagenos = range(1, $submission->numpages);
+        $pagenos = array_combine($pagenos, $pagenos);
+        $select = html_writer::select($pagenos, 'selectpage', $pageno, false, array('id' => 'selectpage',
+                                                                                   'onChange' => 'selectpage();'));
+
         $pageselector = '';
-        $disabled = ($pageno == 1) ? ' disabled = "disabled" ' : '';
-        $pageselector .= '<button id="prevpage" '.$disabled.'onClick="gotoprevpage();" title="'.get_string('keyboardprev','assignment_uploadpdf').'" >&lt;--'.get_string('previous','assignment_uploadpdf').'</button>';
+        $pageselector .= html_writer::tag('button', $prevstr, array('id' => 'prevpage', 'onClick' => 'gotoprevpage();',
+                                                              'title' => $prevtipstr));
+        $pageselector .= html_writer::tag('span', $select, array('style' => 'position:relative;width:50px;display:inline-block;height:34px;'));
+        $pageselector .= html_writer::tag('button', $nextstr, array('id' => 'nextpage', 'onClick' => 'gotonextpage();',
+                                                              'title' => $nexttipstr));
 
-        $pageselector .= '<span style="position:relative; width:50px; display:inline-block; height:34px"><select name="selectpage" id="selectpage" onChange="selectpage();">';
-        for ($i=1; $i<=$pagecount; $i++) {
-            if ($i == $pageno) {
-                $pageselector .= "<option value='$i' selected='selected'>$i</option>";
-            } else {
-                $pageselector .= "<option value='$i'>$i</option>";
-            }
-        }
-        $pageselector .= '</select></span>';
-
-        $disabled = ($pageno == $pagecount) ? ' disabled = "disabled" ' : '';
-        $pageselector .= '<button id="nextpage" '.$disabled.'onClick="gotonextpage();" title="'.get_string('keyboardnext','assignment_uploadpdf').'">'.get_string('next','assignment_uploadpdf').'--&gt;</button>';
-
-        echo $pageselector;
+        $tools = '';
+        $tools .= $pageselector;
 
         if ($enableedit) {
-            // Choose comment colour
-            echo '<input type="submit" id="choosecolour" style="line-height:normal;" name="choosecolour" value="" title="'.get_string('commentcolour','assignment_uploadpdf').'">';
-            echo '<div id="choosecolourmenu" class="yuimenu" title="'.get_string('commentcolour', 'assignment_uploadpdf').'"><div class="bd"><ul class="first-of-type">';
-            $colours = array('red','yellow','green','blue','white','clear');
-            foreach ($colours as $colour) {
-                echo '<li class="yuimenuitem choosecolour-'.$colour.'-"><img src="'.$OUTPUT->pix_url($colour,'assignment_uploadpdf').'"/></li>';
-            }
-            echo '</ul></div></div>';
-
-            // Choose line colour
-            echo '<input type="submit" id="chooselinecolour" style="line-height:normal;" name="chooselinecolour" value="" title="'.get_string('linecolour','assignment_uploadpdf').'">';
-            echo '<div id="chooselinecolourmenu" class="yuimenu"><div class="bd"><ul class="first-of-type">';
-            $colours = array('red','yellow','green','blue','white','black');
-            foreach ($colours as $colour) {
-                echo '<li class="yuimenuitem choosecolour-'.$colour.'-"><img src="'.$OUTPUT->pix_url('line'.$colour, 'assignment_uploadpdf').'"/></li>';
-            }
-            echo '</ul></div></div>';
-
-            // Stamps
-            echo '<input type="submit" id="choosestamp" style="line-height:normal;" name="choosestamp" value="" title="'.get_string('stamp','assignment_uploadpdf').'">';
-            echo '<div id="choosestampmenu" class="yuimenu"><div class="bd"><ul class="first-of-type">';
-            $stamps = MyPDFLib::get_stamps();
-            foreach ($stamps as $stamp => $filename) {
-                echo '<li class="yuimenuitem choosestamp-'.$stamp.'-"><img width="32" height="32" src="'.$OUTPUT->pix_url('stamps/'.$stamp, 'assignment_uploadpdf').'"/></li>';
-            }
-            echo '</ul></div></div>';
-
-
-            // Choose annotation type
-            $drawingtools = array('commenticon','lineicon','rectangleicon','ovalicon','freehandicon','highlighticon','stampicon','eraseicon');
-            $checked = ' yui-button-checked';
-            echo '<div id="choosetoolgroup" class="yui-buttongroup">';
-
-            foreach ($drawingtools as $drawingtool) {
-                echo '<span id="'.$drawingtool.'" class="yui-button yui-radio-button'.$checked.'">';
-                echo ' <span class="first-child">';
-                echo '  <button type="button" name="choosetoolradio" value="'.$drawingtool.'" title="'.get_string($drawingtool,'assignment_uploadpdf').'">';
-                echo '   <img src="'.$OUTPUT->pix_url($drawingtool, 'assignment_uploadpdf').'" />';
-                echo '  </button>';
-                echo ' </span>';
-                echo '</span>';
-                $checked = '';
-            }
-            echo '</div>';
-
+            $tools .= $this->output_toolbar();
         }
-        echo '</div>'; // toolbar-line-2
-        */
+
+        $out .= html_writer::tag('div', $tools, array('id' => 'toolbar-line2'));
 
         return $out;
+    }
+
+    protected function output_toolbar() {
+        global $OUTPUT;
+
+        $tools = '';
+
+        // Choose comment colour:
+        $titlestr = get_string('commentcolour', 'assignfeedback_pdf');
+        $tools .= html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'choosecolour',
+                                                        'style' => 'line-height:normal;', 'name' => 'choosecolour',
+                                                        'value' => '', 'title' => $titlestr));
+        $colours = array('red','yellow','green','blue','white','clear');
+        $list = '';
+        foreach ($colours as $colour) {
+            $colourimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url($colour, 'assignfeedback_pdf')));
+            $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}"));
+        }
+        $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
+        $list = html_writer::tag('div', $list, array('class' => 'bd'));
+        $list = html_writer::tag('div', $list, array('id' => 'choosecolourmenu', 'class' => 'yuimenu',
+                                                    'title' => $titlestr));
+        $tools .= $list;
+
+        // Choose line colour:
+        $titlestr = get_string('linecolour', 'assignfeedback_pdf');
+        $tools .= html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'chooselinecolour',
+                                                        'style' => 'line-height:normal;', 'name' => 'chooselinecolour',
+                                                        'value' => '', 'title' => $titlestr));
+        $colours = array('red','yellow','green','blue','white','black');
+        $list = '';
+        foreach ($colours as $colour) {
+            $colourimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url("line{$colour}", 'assignfeedback_pdf')));
+            $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}"));
+        }
+        $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
+        $list = html_writer::tag('div', $list, array('class' => 'bd'));
+        $list = html_writer::tag('div', $list, array('id' => 'chooselinecolourmenu', 'class' => 'yuimenu',
+                                                    'title' => $titlestr));
+        $tools .= $list;
+
+        // Stamps:
+        $titlestr = get_string('stamp', 'assignfeedback_pdf');
+        $tools .= html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'choosestamp',
+                                                        'style' => 'line-height:normal;', 'name' => 'choosestamp',
+                                                        'value' => '', 'title' => $titlestr));
+        $stamps = AssignPDFLib::get_stamps();
+        $list = '';
+        foreach ($stamps as $stamp => $filename) {
+            $stampimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url("stamps/{$stamp}", 'assignfeedback_pdf'),
+                                                           'width' => '32', 'height' => '32'));
+            $list .= html_writer::tag('li', $stampimg, array('class' => "yuimenuitem choosestamp-{$stamp}"));
+        }
+        $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
+        $list = html_writer::tag('div', $list, array('class' => 'bd'));
+        $list = html_writer::tag('div', $list, array('id' => 'choosestampmenu', 'class' => 'yuimenu',
+                                                    'title' => $titlestr));
+        $tools .= $list;
+
+        // Choose annotation type.
+        $drawingtools = array('commenticon','lineicon','rectangleicon','ovalicon','freehandicon','highlighticon','stampicon','eraseicon');
+        $checked = ' yui-button-checked';
+        $list = '';
+        foreach ($drawingtools as $drawingtool) {
+            $item = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url($drawingtool, 'assignfeedback_pdf')));
+            $item = html_writer::tag('button', $item, array('name' => 'choosetoolradio', 'value' => $drawingtool,
+                                                           'title' => get_string($drawingtool, 'assignfeedback_pdf')));
+            $item = html_writer::tag('span', $item, array('class' => 'first-child'));
+            $item = html_writer::tag('span', $item, array('id' => $drawingtool,
+                                                         'class' => 'yui-button yui-radio-button'.$checked));
+            $list .= $item;
+            $checked = '';
+        }
+        $list = html_writer::tag('div', $list, array('id' => 'choosetoolgroup', 'class' => 'yui-buttongroup'));
+        $tools .= $list;
+
+        return $tools;
     }
 
     protected function get_temp_folder($submissionid) {
@@ -581,7 +611,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     protected function get_page_image($pageno, $submission) {
-        global $CFG;
+        global $CFG, $DB;
 
         require_once($CFG->dirroot.'/mod/assign/submission/pdf/mypdflib.php');
         require_once($CFG->dirroot.'/mod/assign/submission/pdf/lib.php');
@@ -628,6 +658,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $file->copy_content_to($pdffile);  // Copy the PDF out of the file storage, into the temp area
 
         $pagecount = $pdf->set_pdf($pdffile, $pagecount); // Only loads the PDF if the pagecount is unknown (0)
+        if (!$submission->numpages && $pagecount) {
+            // Save the pagecount for future reference.
+            $submission->numpages = $pagecount;
+            $DB->set_field('assignsubmission_pdf', 'numpages', $pagecount, array('submission' => $submission->id));
+        }
         if ($pageno > $pagecount) {
             @unlink($pdffile);
             @rmdir($imagefolder);
@@ -638,7 +673,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         $pdf->set_image_folder($imagefolder);
         if (!$imgname = $pdf->get_image($pageno)) { // Generate the image in the temp area
-            throw new moodle_exception('errorgenerateimage', 'assignment_uploadpdf');
+            throw new moodle_exception('errorgenerateimage', 'assignfeedback_pdf');
         }
 
         $imginfo = array(
