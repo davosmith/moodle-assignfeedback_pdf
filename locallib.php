@@ -28,10 +28,14 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot.'/mod/assign/feedback/pdf/lib.php');
 
-/**
- * File areas for PDF feedback assignment
- */
 define('ASSIGNFEEDBACK_PDF_MAXSUMMARYFILES', 5);
+
+define('ASSIGNFEEDBACK_PDF_ERR_NONE', 0);
+define('ASSIGNFEEDBACK_PDF_ERR_INVALID_ACTION', 1);
+define('ASSIGNFEEDBACK_PDF_ERR_BAD_PAGE_NO', 4);
+define('ASSIGNFEEDBACK_PDF_ERR_INVALID_COMMENT_DATA', 5);
+define('ASSIGNFEEDBACK_PDF_ERR_GENERIC', 200);
+
 
 /**
  * library class for pdf feedback plugin extending feedback plugin base class
@@ -276,7 +280,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             if ($this->create_response_pdf($submission->id)) {
                 // TODO davo - decide if this is actually needed any more.
                 /*
-                $submission->data2 = ASSIGNMENT_UPLOADPDF_STATUS_RESPONDED;
+                $submission->data2 = ASSIGNFEEDBACK_PDF_STATUS_RESPONDED;
 
                 $updated = new stdClass();
                 $updated->id = $submission->id;
@@ -706,5 +710,262 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     public function create_response_pdf($submissionid) {
         // TODO davo - finish this
         return false;
+    }
+
+    public function update_comment_page($userid, $pageno) {
+        global $USER, $DB;
+
+        $resp = array('error'=> ASSIGNFEEDBACK_PDF_ERR_NONE);
+
+        require_sesskey();
+
+        // Retrieve all database records.
+        $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
+        $assignment = $this->assignment->get_instance();
+        $params = array('assignment' => $assignment->id, 'userid' => $user->id);
+        $submission = $DB->get_record('assign_submission', $params, '*', MUST_EXIST);
+        $params = array('assignment' => $assignment->id, 'submission' => $submission->id);
+        $submissionpdf = $DB->get_record('assignsubmission_pdf', $params, '*', MUST_EXIST);
+        $submission->numpages = $submissionpdf->numpages;
+        $context = $this->assignment->get_context();
+
+        $action = optional_param('action','', PARAM_ALPHA);
+
+        if ($action == 'getcomments' || $action == 'getimageurl') {
+            if ($user->id == $USER->id) {
+                // Students can view comments / images for their own assignment
+                require_capability('mod/assignment:submit', $context);
+            } else {
+                require_capability('mod/assignment:grade', $context);
+            }
+        } else {
+            // All annotation requests need to have 'grade' capability
+            require_capability('mod/assignment:grade', $context);
+        }
+
+        if ($action == 'update') {
+            $comment = new stdClass();
+            $comment->id = optional_param('comment_id', -1, PARAM_INT);
+            $comment->posx = optional_param('comment_position_x', -1, PARAM_INT);
+            $comment->posy = optional_param('comment_position_y', -1, PARAM_INT);
+            $comment->width = optional_param('comment_width', -1, PARAM_INT);
+            $comment->rawtext = optional_param('comment_text', null, PARAM_TEXT);
+            $comment->colour = optional_param('comment_colour', 'yellow', PARAM_TEXT);
+            $comment->pageno = $pageno;
+            $comment->submissionid = $submission->id;
+
+            if (($comment->posx < 0) || ($comment->posy < 0) || ($comment->width < 0) || ($comment->rawtext === null)) {
+                send_error('Missing comment data', ASSIGNFEEDBACK_PDF_ERR_INVALID_COMMENT_DATA);
+            }
+
+            if ($comment->id === -1) {
+                // Insert new comment.
+                unset($comment->id);
+                $oldcomments = $DB->get_records('assignfeedback_pdf_cmnt', array('submissionid' => $comment->submissionid,
+                                                                                'pageno' => $comment->pageno,
+                                                                                'posx' => $comment->posx,
+                                                                                'posy' => $comment->posy));
+                foreach ($oldcomments as $oldcomment) {
+                    if ($oldcomment->rawtext == $comment->rawtext) {
+                        // Avoid inserting duplicate comments (likely to be due to network glitch).
+                        $comment->id = reset(array_keys($oldcomments));
+                        break;
+                    }
+                }
+                if (!isset($comment->id)) {
+                    $comment->id = $DB->insert_record('assignfeedback_pdf_cmnt', $comment);
+                }
+            } else {
+                // Update old comment.
+                $oldcomment = $DB->get_record('assignfeedback_pdf_cmnt', array('id' => $comment->id));
+                if (!$oldcomment) {
+                    // Comment not found - create a new one.
+                    unset($comment->id);
+                    $comment->id = $DB->insert_record('assignfeedback_pdf_cmnt', $comment);
+                } else if (($oldcomment->submissionid != $submission->id) || ($oldcomment->pageno != $pageno)) {
+                    send_error('Comment id is for a different submission or page', ASSIGNFEEDBACK_PDF_ERR_INVALID_COMMENT_DATA);
+                } else {
+                    $DB->update_record('assignfeedback_pdf_cmnt', $comment);
+                }
+            }
+
+            $resp['id'] = $comment->id;
+
+        } elseif ($action == 'getcomments') {
+            $comments = $DB->get_records('assignfeedback_pdf_cmnt', array('submissionid' => $submission->id,
+                                                                         'pageno' => $pageno));
+            $respcomments = array();
+            foreach ($comments as $comment) {
+                $respcomment = array();
+                $respcomment['id'] = ''.$comment->id;
+                $respcomment['text'] = $comment->rawtext;
+                $respcomment['width'] = $comment->width;
+                $respcomment['position'] = array('x'=> $comment->posx, 'y'=> $comment->posy);
+                $respcomment['colour'] = $comment->colour;
+                $respcomments[] = $respcomment;
+            }
+            $resp['comments'] = $respcomments;
+
+            $annotations = $DB->get_records('assignfeedback_pdf_annot', array('submissionid' => $submission->id,
+                                                                             'pageno' => $pageno));
+            $respannotations = array();
+            foreach ($annotations as $annotation) {
+                $respannotation = array();
+                $respannotation['id'] = ''.$annotation->id;
+                $respannotation['type'] = $annotation->type;
+                if ($annotation->type == 'freehand') {
+                    $respannotation['path'] = $annotation->path;
+                    if (is_null($annotation->path)) {
+                        $DB->delete_records('assignfeedback_pdf_annot', array('id'=>$annotation->id));
+                        continue;
+                    }
+                } else {
+                    $respannotation['coords'] = array('startx'=> $annotation->startx, 'starty'=> $annotation->starty,
+                                                      'endx'=> $annotation->endx, 'endy'=> $annotation->endy );
+                }
+                if ($annotation->type == 'stamp') {
+                    $respannotation['path'] = $annotation->path;
+                }
+                $respannotation['colour'] = $annotation->colour;
+                $respannotations[] = $respannotation;
+            }
+            $resp['annotations'] = $respannotations;
+
+        } elseif ($action == 'delete') {
+            $commentid = required_param('commentid', PARAM_INT);
+            $DB->delete_records('assignfeedback_pdf_cmnt', array('id' => $commentid,
+                                                                'submissionid' => $submission->id,
+                                                                'pageno' => $pageno));
+
+        } elseif ($action == 'getquicklist') {
+
+            $quicklist = $DB->get_records('assignfeedback_pdf_qcklst', array('userid' => $USER->id), 'id');
+            $respquicklist = array();
+            foreach ($quicklist as $item) {
+                $respitem = array();
+                $respitem['id'] = ''.$item->id;
+                $respitem['text'] = $item->text;
+                $respitem['width'] = $item->width;
+                $respitem['colour'] = $item->colour;
+                $respquicklist[] = $respitem;
+            }
+            $resp['quicklist'] = $respquicklist;
+
+        } elseif ($action == 'addtoquicklist') {
+
+            $item = new stdClass();
+            $item->userid = $USER->id;
+            $item->width = required_param('width', PARAM_INT);
+            $item->text = required_param('text', PARAM_TEXT);
+            $item->colour = optional_param('colour', 'yellow', PARAM_TEXT);
+
+            if ($item->width < 0 || empty($item->text)) {
+                send_error('Missing quicklist data');
+            }
+
+            $item->id = $DB->insert_record('assignfeedback_pdf_qcklst', $item);
+            $resp['item'] = $item;
+
+        } elseif ($action == 'removefromquicklist') {
+
+            $itemid = required_param('itemid', PARAM_INT);
+            $DB->delete_records('assignfeedback_pdf_qcklst', array('id' => $itemid, 'userid' => $USER->id));
+            $resp['itemid'] = $itemid;
+
+        } elseif ($action == 'getimageurl') {
+
+            if ($pageno < 1) {
+                send_error('Requested page number is too small (< 1)', ASSIGNFEEDBACK_PDF_ERR_BAD_PAGE_NO);
+            }
+
+            list($imageurl, $imgwidth, $imgheight, $pagecount) = $this->get_page_image($pageno, $submission);
+
+            if ($pageno > $pagecount) {
+                send_error('Requested page number is bigger than the page count ('.$pageno.' > '.$pagecount.')',
+                           ASSIGNFEEDBACK_PDF_ERR_BAD_PAGE_NO);
+            }
+
+            $resp['image'] = new stdClass();
+            $resp['image']->url = $imageurl;
+            $resp['image']->width = $imgwidth;
+            $resp['image']->height = $imgheight;
+
+        } elseif ($action == 'addannotation') {
+
+            $annotation = new stdClass();
+            $annotation->startx = optional_param('annotation_startx', -1, PARAM_INT);
+            $annotation->starty = optional_param('annotation_starty', -1, PARAM_INT);
+            $annotation->endx = optional_param('annotation_endx', -1, PARAM_INT);
+            $annotation->endy = optional_param('annotation_endy', -1, PARAM_INT);
+            $annotation->path = optional_param('annotation_path', null, PARAM_TEXT);
+            $annotation->colour = optional_param('annotation_colour', 'red', PARAM_TEXT);
+            $annotation->type = optional_param('annotation_type', 'line', PARAM_TEXT);
+            $annotation->id = optional_param('annotation_id', -1, PARAM_INT);
+            $annotation->pageno = $pageno;
+            $annotation->submissionid = $submission->id;
+
+            if (!in_array($annotation->type, array('freehand', 'line', 'oval', 'rectangle', 'highlight', 'stamp'))) {
+                send_error("Invalid type {$annotation->type}");
+            }
+
+            if ($annotation->type == 'freehand') {
+                if (!$annotation->path) {
+                    send_error('Missing annotation data');
+                }
+                // Double-check path is valid list of points
+                $points = explode(',', $annotation->path);
+                if (count($points)%2 != 0) {
+                    send_error('Odd number of coordinates in line - should be 2 coordinates per point');
+                }
+                foreach ($points as $point) {
+                    if (!preg_match('/^\d+$/', $point)) {
+                        send_error('Path point is invalid');
+                    }
+                }
+            } else {
+                if ($annotation->type != 'stamp') {
+                    $annotation->path = null;
+                }
+                if (($annotation->startx < 0) || ($annotation->starty < 0) || ($annotation->endx < 0) || ($annotation->endy < 0)) {
+                    if ($annotation->id < 0) {
+                        send_error('Missing annotation data');
+                    } else {
+                        // OK not to send these when updating a line
+                        unset($annotation->startx);
+                        unset($annotation->starty);
+                        unset($annotation->endx);
+                        unset($annotation->endy);
+                    }
+                }
+            }
+
+            if ($annotation->id === -1) {
+                unset($annotation->id);
+                $annotation->id = $DB->insert_record('assignfeedback_pdf_annot', $annotation);
+            } else {
+                $oldannotation = $DB->get_record('assignfeedback_pdf_annot', array('id' => $annotation->id) );
+                if (!$oldannotation) {
+                    unset($annotation->id);
+                    $annotation->id = $DB->insert_record('assignfeedback_pdf_annot', $annotation);
+                } else if (($oldannotation->submissionid != $submission->id) || ($oldannotation->pageno != $pageno)) {
+                    send_error('Annotation id is for a different submission or page');
+                } else {
+                    $DB->update_record('assignfeedback_pdf_annot', $annotation);
+                }
+            }
+
+            $resp['id'] = $annotation->id;
+
+        } elseif ($action == 'removeannotation') {
+
+            $annotationid = required_param('annotationid', PARAM_INT);
+            $DB->delete_records('assignfeedback_pdf_annot', array('id' => $annotationid,
+                                                                 'submissionid' => $submission->id,
+                                                                 'pageno' => $pageno));
+        } else {
+            send_error('Invalid action "'.$action.'"', ASSIGNFEEDBACK_PDF_ERR_INVALID_ACTION);
+        }
+
+        echo json_encode($resp);
     }
 }
