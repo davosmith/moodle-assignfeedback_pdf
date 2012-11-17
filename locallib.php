@@ -102,28 +102,30 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     protected function annotate_link(stdClass $grade) {
-        global $DB;
+        global $DB, $USER;
 
-        $cm = $this->assignment->get_course_module();
-        $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'userid' => $grade->userid));
-
-        $returnparams = $this->assignment->get_return_params();
-        if (isset($returnparams['rownum'])) {
-            $url->param('rownum', $returnparams['rownum']); // Nasty hack to get back to where we started from.
+        $out = array();
+        $context = $this->assignment->get_context();
+        if (has_capability('mod/assign:grade', $context)) {
+            // Add 'annotate submission' link.
+            $cm = $this->assignment->get_course_module();
+            $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'userid' => $grade->userid));
+            $returnparams = $this->assignment->get_return_params();
+            if (isset($returnparams['rownum'])) {
+                $url->param('rownum', $returnparams['rownum']); // Nasty hack to get back to where we started from.
+            }
+            $out[] = html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
         }
 
         $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $grade->id));
-
-        $out = html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
         if ($status == ASSIGNSUBMISSION_PDF_STATUS_RESPONDED) {
-            $context = $this->assignment->get_context();
+            // Add 'download response' link
             $downloadurl = moodle_url::make_pluginfile_url($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE,
                                                            $grade->id, '/', ASSIGNFEEDBACK_PDF_FILENAME, true);
-            $out .= html_writer::empty_tag('br');
-            $out .= html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
+            $out[] = html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
         }
 
-        return $out;
+        return implode('<br />', $out);
     }
 
     /**
