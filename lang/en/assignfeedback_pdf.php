@@ -40,6 +40,7 @@ $string['commentcolour'] = '[,] - comment background colour';
 $string['commenticon'] = "c - add comments\nHold Ctrl to draw a line";
 $string['deletecomment'] = 'Delete comment';
 $string['downloadoriginal'] = 'Download original submission PDF';
+$string['downloadresponse'] = 'Download response';
 $string['draftsaved'] = 'Draft saved';
 $string['emptyquicklist'] = 'No items in Quicklist';
 $string['emptyquicklist_instructions'] = 'Right-click on a comment to copy it to the Quicklist';

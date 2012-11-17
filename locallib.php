@@ -102,7 +102,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     protected function annotate_link(stdClass $grade) {
-        // TODO davo - add link to download PDF (once generated)
+        global $DB;
+
         $cm = $this->assignment->get_course_module();
         $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'userid' => $grade->userid));
 
@@ -111,7 +112,18 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $url->param('rownum', $returnparams['rownum']); // Nasty hack to get back to where we started from.
         }
 
-        return html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
+        $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $grade->id));
+
+        $out = html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
+        if ($status == ASSIGNSUBMISSION_PDF_STATUS_RESPONDED) {
+            $context = $this->assignment->get_context();
+            $downloadurl = moodle_url::make_pluginfile_url($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE,
+                                                           $grade->id, '/', ASSIGNFEEDBACK_PDF_FILENAME, true);
+            $out .= html_writer::empty_tag('br');
+            $out .= html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
+        }
+
+        return $out;
     }
 
     /**
@@ -282,15 +294,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         // Generate the response PDF and cose the window, if requested
         if ($enableedit && $generateresponse) {
             if ($this->create_response_pdf($submission->id)) {
-                // TODO davo - decide if this is actually needed any more.
-                /*
-                $submission->data2 = ASSIGNFEEDBACK_PDF_STATUS_RESPONDED;
-
                 $updated = new stdClass();
-                $updated->id = $submission->id;
-                $updated->data2 = $submission->data2;
-                $DB->update_record('assign_submission', $updated);
-                */
+                $updated->id = $submissionpdf->id;
+                $updated->status = ASSIGNSUBMISSION_PDF_STATUS_RESPONDED;
+                $DB->update_record('assignsubmission_pdf', $updated);
                 $this->back_to_grading();
 
             } else {
