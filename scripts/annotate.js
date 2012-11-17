@@ -42,7 +42,6 @@ var ServerComm = new Class({
     pageno: null,
     sesskey: null,
     url: null,
-    js_navigation: true,
     retrycount: 0,
     editing: true,
     waitel: null,
@@ -56,7 +55,6 @@ var ServerComm = new Class({
         this.pageno = settings.pageno;
         this.sesskey = settings.sesskey;
         this.url = settings.updatepage;
-        this.js_navigation = settings.js_navigation;
         this.editing = settings.editing.toInt();
 
         this.waitel = new Element('div');
@@ -337,9 +335,6 @@ var ServerComm = new Class({
     },
 
     getimageurl: function(pageno, changenow) {
-        if (!this.js_navigation) {
-            return; // Only preload pages if using js navigation method
-        }
         if (changenow) {
             if ($defined(pagelist[pageno])) {
                 showpage(pageno);
@@ -960,6 +955,7 @@ function setcurrenttool(toolname) {
     if (!server.editing) {
         return;
     }
+    Cookie.write('uploadpdf_tool', toolname);
     abortline(); // Just in case we are in the middle of drawing, when we change tools
     toolname += 'icon';
     var btns = choosedrawingtool.getButtons();
@@ -981,8 +977,6 @@ function startline(e) {
     if (e.rightClick) {
         return true;
     }
-
-    //unselectline();
 
     if (currentpaper) {
         return true; // If user clicks very quickly this can happen
@@ -1513,7 +1507,7 @@ function startjs() {
                 lazyloadmenu: false });
             colourMenu.on("selectedMenuItemChange", function(e) {
                 var menuItem = e.newValue;
-                var colour = (/choosecolour-([a-z]*)-/i.exec(menuItem.element.className))[1];
+                var colour = (/choosecolour-([a-z]*)/i.exec(menuItem.element.className))[1];
                 this.set("label", '<img src="'+server_config.image_path+colour+'.gif" />');
                 this.set("value", colour);
                 changecolour();
@@ -1526,7 +1520,7 @@ function startjs() {
                 lazyloadmenu: false });
             linecolourmenu.on("selectedMenuItemChange", function(e) {
                 var menuItem = e.newValue;
-                var colour = (/choosecolour-([a-z]*)-/i.exec(menuItem.element.className))[1];
+                var colour = (/choosecolour-([a-z]*)/i.exec(menuItem.element.className))[1];
                 this.set("label", '<img src="'+server_config.image_path+'line'+colour+'.gif" />');
                 this.set("value", colour);
                 changelinecolour();
@@ -1539,7 +1533,7 @@ function startjs() {
                 lazyloadmenu: false });
             stampmenu.on("selectedMenuItemChange", function(e) {
                 var menuItem = e.newValue;
-                var stamp = (/choosestamp-([a-z]*)-/i.exec(menuItem.element.className))[1];
+                var stamp = (/choosestamp-([a-z]*)/i.exec(menuItem.element.className))[1];
                 this.set("label", '<img width="32" height="32" src="'+getstampimage(stamp)+'" />');
                 this.set("value", stamp);
                 changestamp();
@@ -1567,7 +1561,11 @@ function startjs() {
         }
         if (document.getElementById('choosetoolgroup')) {
             choosedrawingtool = new YAHOO.widget.ButtonGroup("choosetoolgroup");
-            setcurrenttool('commenticon');
+            choosedrawingtool.on("checkedButtonChange", function(e) {
+                var newtool = e.newValue.get("value");
+                newtool = newtool.substr(0, newtool.length - 4); // Strip off the 'icon' part
+                Cookie.write('uploadpdf_tool', newtool);
+            });
         }
     }
     var downloadpdfbutton = new YAHOO.widget.Button("downloadpdf");
@@ -1614,22 +1612,25 @@ function startjs() {
             stamp = 'tick';
         }
         setcurrentstamp(stamp, false);
+        var tool = Cookie.read('uploadpdf_tool');
+        if (!$defined(tool)) {
+            tool = 'comment';
+        }
+        setcurrenttool(tool);
     }
 
     // Start preloading pages if using js navigation method
-    if (server_config.js_navigation) {
-        document.addEvent('keydown', keyboardnavigation);
-        pagelist = new Array();
-        var pageno = server.pageno.toInt();
-        // Little fix as Firefox remembers the selected option after a page refresh
-        var sel = document.id('selectpage');
-        var selidx = sel.selectedIndex;
-        var selpage = sel[selidx].value;
-        if (selpage != pageno) {
-            gotopage(selpage);
-        } else {
-            server.getimageurl(pageno+1, false);
-        }
+    document.addEvent('keydown', keyboardnavigation);
+    pagelist = new Array();
+    var pageno = server.pageno.toInt();
+    // Little fix as Firefox remembers the selected option after a page refresh
+    var sel = document.id('selectpage');
+    var selidx = sel.selectedIndex;
+    var selpage = sel[selidx].value;
+    if (selpage != pageno) {
+        gotopage(selpage);
+    } else {
+        server.getimageurl(pageno+1, false);
     }
 
     window.addEvent('beforeunload', function() {

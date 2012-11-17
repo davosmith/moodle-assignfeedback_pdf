@@ -269,10 +269,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         // Close the window (if the user clicks on 'savedraft')
         if ($enableedit && $savedraft) {
-            echo $OUTPUT->header(get_string('feedback', 'assignment').':'.format_string($assignment->name));
-            echo $OUTPUT->heading(get_string('draftsaved', 'assignmentfeedback_pdf'));
-            echo html_writer::script('self.close()');
-            die();
+            $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id, 'action' => 'grading'));
+            redirect($redir);
         }
 
         // Generate the response PDF and cose the window, if requested
@@ -287,15 +285,9 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 $updated->data2 = $submission->data2;
                 $DB->update_record('assign_submission', $updated);
                 */
+                $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id, 'action' => 'grading'));
+                redirect($redir);
 
-                $PAGE->set_title(get_string('feedback', 'assignment').':'.format_string($assignment->name));
-                echo $OUTPUT->header();
-                echo $OUTPUT->heading(get_string('responseok', 'assignmentfeedback_pdf'));
-                require_once($CFG->libdir.'/gradelib.php');
-                // TODO davo - is this still needed?
-                //echo $this->update_main_listing($submission);
-                echo html_writer::script('self.close()');
-                die();
             } else {
                 echo $OUTPUT->header(get_string('feedback', 'assignment').':'.format_string($this->assignment->name));
                 print_error('responseproblem', 'assignfeedback_pdf');
@@ -318,8 +310,6 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         echo $this->output_controls($submission, $user, $pageno, $enableedit, $showprevious);
 
-        $pageselector = ''; // TODO davo - fix this properly
-
         // TODO davo - the rest of this function needs reviewing
 
         // Output the page image
@@ -327,6 +317,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         echo '<div id="pdfouter" style="position: relative; "> <div id="pdfholder" > ';
         echo '<img id="pdfimg" src="'.$imageurl.'" width="'.$imgwidth.'" height="'.$imgheight.'" />';
         echo '</div></div></div>';
+
+        $pageselector = $this->output_pageselector($submission, $pageno);
         $pageselector = str_replace(array('selectpage','"nextpage"','"prevpage"'),array('selectpage2','"nextpage2"','"prevpage2"'),$pageselector);
         echo '<br/>';
         echo $pageselector;
@@ -479,6 +471,20 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         $out .= html_writer::tag('div', $saveopts, array('id' => 'saveoptions'));
 
+
+        $tools = '';
+        $tools .= $this->output_pageselector($submission, $pageno);
+
+        if ($enableedit) {
+            $tools .= $this->output_toolbar();
+        }
+
+        $out .= html_writer::tag('div', $tools, array('id' => 'toolbar-line2'));
+
+        return $out;
+    }
+
+    protected function output_pageselector($submission, $pageno) {
         $prevstr = '&lt;-- '.get_string('previous', 'assignfeedback_pdf');
         $prevtipstr = get_string('keyboardprev', 'assignfeedback_pdf');
         $nextstr = get_string('next', 'assignfeedback_pdf').' --&gt;';
@@ -490,21 +496,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         $pageselector = '';
         $pageselector .= html_writer::tag('button', $prevstr, array('id' => 'prevpage', 'onClick' => 'gotoprevpage();',
-                                                              'title' => $prevtipstr));
+                                                                   'title' => $prevtipstr));
         $pageselector .= html_writer::tag('span', $select, array('style' => 'position:relative;width:50px;display:inline-block;height:34px;'));
         $pageselector .= html_writer::tag('button', $nextstr, array('id' => 'nextpage', 'onClick' => 'gotonextpage();',
-                                                              'title' => $nexttipstr));
+                                                                   'title' => $nexttipstr));
 
-        $tools = '';
-        $tools .= $pageselector;
-
-        if ($enableedit) {
-            $tools .= $this->output_toolbar();
-        }
-
-        $out .= html_writer::tag('div', $tools, array('id' => 'toolbar-line2'));
-
-        return $out;
+        return $pageselector;
     }
 
     protected function output_toolbar() {
