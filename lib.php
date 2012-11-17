@@ -29,6 +29,60 @@ define('ASSIGNFEEDBACK_PDF_FA_RESPONSE', 'feedback_pdf_response'); // Response g
 
 define('ASSIGNFEEDBACK_PDF_FILENAME', 'response.pdf');
 
-function assignfeedback_file_pluginfile($course, $cm, context $context, $filearea, $args, $forcedownload) {
+function assignfeedback_pdf_pluginfile($course, $cm, context $context, $filearea, $args, $forcedownload) {
+    global $DB, $USER, $CFG;
+
+    if ($context->contextlevel != CONTEXT_MODULE) {
+        return false;
+    }
+
+    $submissionid = array_shift($args);
+    $submission = $DB->get_record('assign_submission', array('id' => $submissionid));
+
+    if ($submission->assignment != $cm->instance) {
+        return false; // Submission does not belong to this assignment.
+    }
+
+    if ($USER->id == $submission->userid) {
+        // Own submission - check permission to submit.
+        if (!has_capability('mod/assign:submit', $context)) {
+            return false;
+        }
+    } else {
+        // Another user's submission - check permission to grade.
+        if (!has_capability('mod/assign:grade', $context)) {
+            return false;
+        }
+    }
+
+    require_once($CFG->dirroot.'/mod/assign/locallib.php');
+    $filename = array_pop($args);
+    $filepath = '/';
+    if ($filearea == ASSIGNFEEDBACK_PDF_FA_IMAGE) {
+        if ($submission->status != ASSIGN_SUBMISSION_STATUS_SUBMITTED) {
+            return false; // Not submitted for marking.
+        }
+        if (empty($args)) {
+            $filepath = '/';
+        } else {
+            $filepath = '/'.implode('/', $args).'/';
+        }
+    } else if ($filearea == ASSIGNFEEDBACK_PDF_FA_RESPONSE) {
+        if ($filename != ASSIGNFEEDBACK_PDF_FILENAME || !empty($args)) {
+            return false; // Check filename and path (empty)
+        }
+        if ($submission->status != ASSIGN_SUBMISSION_STATUS_SUBMITTED) {
+            return false; // Not submitted for marking.
+        }
+    } else {
+        return false;
+    }
+
+    $fs = get_file_storage();
+    $file = $fs->get_file($context->id, 'assignfeedback_pdf', $filearea, $submission->id, $filepath, $filename);
+    if ($file) {
+        send_stored_file($file, 86400, 0, $forcedownload);
+    }
+
     return false;
 }

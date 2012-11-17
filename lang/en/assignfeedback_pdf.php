@@ -26,9 +26,18 @@
 defined('MOODLE_INTERNAL') || die();
 
 //$string['allowpdffeedback'] = 'Enabled';
+$string['annotatesubmission'] = 'Annotate submission';
+$string['draftsaved'] = 'Draft saved';
 $string['enabled'] = 'PDF feedback';
 $string['enabled_help'] = 'This allows the online annotation of PDFs (submitted via the PDF submission type) and the returning of the annotated work to students.';
+$string['errorgenerateimage'] = 'Unable to generate image - details: {$a}';
+$string['errornosubmission'] = 'Atempting to create image for non-existent submission';
+$string['errortempfolder'] = 'Unable to create temporary folder';
+$string['generateresponse'] = 'Generate response file';
 $string['imagefor'] = 'Image files for {$a}';
 $string['pdf'] = 'PDF feedback';
 $string['pluginname'] = 'PDF feedback';
 $string['responsefor'] = 'Response file for {$a}';
+$string['responseok'] = 'Response file generated';
+$string['responseproblem'] = 'There was a problem whilst generating the response file';
+$string['savedraft'] = 'Save draft annotations';

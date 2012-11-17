@@ -1,0 +1,164 @@
+.path-mod-assign-feedback-pdf .comment {
+    position: absolute;
+    border: black 1px solid;
+    font-family: helvetica, arial, sans;
+    font-size: 12px;
+    cursor: move;
+    width: 120px;
+    line-height: normal;
+    white-space: pre-wrap;
+}
+
+.path-mod-assign-feedback-pdf .commentyellow {
+    background-color: #ffffb0;
+}
+
+.path-mod-assign-feedback-pdf .commentred {
+    background-color: #ffb0b0;
+}
+
+.path-mod-assign-feedback-pdf .commentgreen {
+    background-color: #b0ffb0;
+}
+
+.path-mod-assign-feedback-pdf .commentblue {
+    background-color: #d0d0ff;
+}
+
+.path-mod-assign-feedback-pdf .commentwhite {
+    background-color: #ffffff;
+}
+
+.path-mod-assign-feedback-pdf .commentclear {
+    background-color: transparent;
+    border-style: none;
+}
+
+.path-mod-assign-feedback-pdf .comment textarea {
+    font-family: arial, sans;
+    font-size: 12px;
+    width: 100%;
+    resize: none;
+    padding: 0px;
+    border: 0px;
+}
+
+.path-mod-assign-feedback-pdf .comment .resizehandle {
+    background-image: url([[pix:assignfeedback_pdf|resize]]);
+    width: 15px;
+    height: 15px;
+    top: 100%;
+    left: 100%;
+    margin-top: -15px;
+    margin-left: -15px;
+    position: absolute;
+    cursor: e-resize;
+    -moz-background-clip: -moz-initial;
+    -moz-background-origin: -moz-initial;
+    -moz-background-inline-policy: -moz-initial;
+}
+
+.path-mod-assign-feedback-pdf .comment-highlight {
+    border: red 2px dashed;
+    margin: -1px;
+}
+
+.path-mod-assign-feedback-pdf #pdfholder .pagewait {
+    background-image: url([[pix:assignfeedback_pdf|pagewait]]);
+    width: 24px;
+    height: 24px;
+    top: 0px;
+    left: 0px;
+    position: absolute;
+    -moz-background-clip: -moz-initial;
+    -moz-background-origin: -moz-initial;
+    -moz-background-inline-policy: -moz-initial;
+}
+
+.path-mod-assign-feedback-pdf #pdfholder .hidden {
+    display: none;
+}
+
+.path-mod-assign-feedback-pdf .comment .wait {
+    background-image: url([[pix:assignfeedback_pdf|wait]]);
+    width: 16px;
+    height: 16px;
+    top: 0px;
+    left: 100%;
+    margin-left: -17px;
+    position: absolute;
+    -moz-background-clip: -moz-initial;
+    -moz-background-origin: -moz-initial;
+    -moz-background-inline-policy: -moz-initial;
+}
+
+.path-mod-assign-feedback-pdf #pdfholder {
+    border-width: 1px;
+    border-color: black;
+    border-style: solid;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.path-mod-assign-feedback-pdf .error {
+    border-width: 1px;
+    border-color: red;
+    border-style: dashed;
+}
+
+/* context menu specific */
+.path-mod-assign-feedback-pdf .contextmenu	{ border:1px solid #999; padding:0; background:#eee; width:221px; list-style-type:none; display:none; }
+.path-mod-assign-feedback-pdf .contextmenu .separatorie7 { border-top:1px solid #999; }
+.path-mod-assign-feedback-pdf .contextmenu .separator { border-bottom:1px solid #999; }
+.path-mod-assign-feedback-pdf .contextmenu li	{ margin:0; padding:0; clear: both; font-size:14px; list-style-type: none; }
+.path-mod-assign-feedback-pdf .contextmenu li a { display:block; padding:5px 5px 5px 5px; width:190px; font-size:12px; text-decoration:none; font-family:tahoma,arial,sans-serif; color:#000; float: left; }
+.path-mod-assign-feedback-pdf .contextmenu li a:hover	{ background-color:#ddd; }
+.path-mod-assign-feedback-pdf .contextmenu li a.disabled { color:#ccc; font-style:italic; }
+.path-mod-assign-feedback-pdf .contextmenu li a.disabled:hover { background-color:#eee; }
+.path-mod-assign-feedback-pdf .contextmenu li a.delete { width: 10px; }
+.path-mod-assign-feedback-pdf .contextmenu li a.delete:hover { background-color:#d00; }
+
+.path-mod-assign-feedback-pdf #toolbar-line2 button {
+    height: 35px;
+    line-height: normal;
+}
+
+.path-mod-assign-feedback-pdf #toolbar-line2 select {
+    height: 37px;
+    position: absolute;
+    top: 0px;
+}
+
+.path-mod-assign-feedback-pdf #saveoptions {
+    margin-bottom: 5px;
+}
+
+.path-mod-assign-feedback-pdf #saveoptions .yui-button button, #saveoptions .yui-button a {
+    line-height: 1.5;
+}
+
+.path-mod-assign-feedback-pdf #choosetoolgroup .yui-radio-button {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.path-mod-assign-feedback-pdf #saveoptions form {
+    display: inline;
+}
+
+.path-mod-assign-feedback-pdf #choosetoolgroup {
+    display: inline;
+    margin-left: 5px;
+}
+
+.path-mod-assign-feedback-pdf #toolbar-line2 select {
+    display: inline;
+}
+
+/* Fix to allow scrolling to view pages if window is too small */
+.path-mod-assign-feedback-pdf #page-content,
+.path-mod-assign-feedback-pdf #page-content #region-main,
+.path-mod-assign-feedback-pdf #page-content .region-content {
+    overflow: visible;
+}
