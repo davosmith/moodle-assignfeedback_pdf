@@ -49,6 +49,7 @@ $string['eraseicon'] = 'e - erase lines and shapes';
 $string['errorgenerateimage'] = 'Unable to generate image - details: {$a}';
 $string['errormessage'] = 'Error message: ';
 $string['errornosubmission'] = 'Atempting to create image for non-existent submission';
+$string['errornosubmission2'] = 'Unable to find submission PDF';
 $string['errortempfolder'] = 'Unable to create temporary folder';
 $string['findcomments'] = 'Find comments';
 $string['findcommentsempty'] = 'No comments';

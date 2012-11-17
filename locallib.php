@@ -721,8 +721,97 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     public function create_response_pdf($submissionid) {
-        // TODO davo - finish this
-        return false;
+        global $DB;
+
+        $context = $this->assignment->get_context();
+        $fs = get_file_storage();
+        $file = $fs->get_file($context->id, 'assignsubmission_pdf', ASSIGNSUBMISSION_PDF_FA_FINAL, $submissionid,
+                              '/', ASSIGNSUBMISSION_PDF_FILENAME);
+        if (!$file) {
+            throw new moodle_exception('errornosubmission2', 'assignfeedback_pdf');
+        }
+        $temparea = $this->get_temp_folder($submissionid).'sub';
+        if (!file_exists($temparea)) {
+            if (!mkdir($temparea, 0777, true)) {
+                throw new moodle_exception('errortempfolder', 'assignfeedback_pdf');
+            }
+        }
+        $sourcefile = $temparea.'/submission.pdf';
+        $destfile = $temparea.'/response.pdf';
+
+        $file->copy_content_to($sourcefile);
+
+        $mypdf = new AssignPDFLib();
+        $mypdf->load_pdf($sourcefile);
+
+        $comments = $DB->get_records('assignfeedback_pdf_cmnt', array('submissionid' => $submissionid), 'pageno');
+        $annotations = $DB->get_records('assignfeedback_pdf_annot', array('submissionid' => $submissionid), 'pageno');
+
+        if ($comments) { $comment = current($comments); } else { $comment = false; }
+        if ($annotations) { $annotation = current($annotations); } else { $annotation = false; }
+        while(true) {
+            if ($comment) {
+                $nextpage = $comment->pageno;
+                if ($annotation) {
+                    if ($annotation->pageno < $nextpage) {
+                        $nextpage = $annotation->pageno;
+                    }
+                }
+            } else {
+                if ($annotation) {
+                    $nextpage = $annotation->pageno;
+                } else {
+                    break;
+                }
+            }
+
+            while ($nextpage > $mypdf->current_page()) {
+                if (!$mypdf->copy_page()) {
+                    break 2;
+                }
+            }
+
+            while (($comment) && ($comment->pageno == $mypdf->current_page())) {
+                $mypdf->add_comment($comment->rawtext, $comment->posx, $comment->posy, $comment->width, $comment->colour);
+                $comment = next($comments);
+            }
+
+            while (($annotation) && ($annotation->pageno == $mypdf->current_page())) {
+                if ($annotation->type == 'freehand') {
+                    $path = explode(',',$annotation->path);
+                    $mypdf->add_annotation(0,0,0,0, $annotation->colour, 'freehand', $path);
+                } else {
+                    $mypdf->add_annotation($annotation->startx, $annotation->starty, $annotation->endx,
+                                           $annotation->endy, $annotation->colour, $annotation->type, $annotation->path);
+                }
+                $annotation = next($annotations);
+            }
+        }
+
+        $mypdf->copy_remaining_pages();
+        $mypdf->save_pdf($destfile);
+
+        // Delete any previous response file
+        if ($file = $fs->get_file($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE, $submissionid, '/', ASSIGNFEEDBACK_PDF_FILENAME) ) {
+            $file->delete();
+        }
+
+        $fileinfo = array(
+            'contextid' => $context->id,
+            'component' => 'assignfeedback_pdf',
+            'filearea' => ASSIGNFEEDBACK_PDF_FA_RESPONSE,
+            'itemid' => $submissionid,
+            'filepath' => '/',
+            'filename' => ASSIGNFEEDBACK_PDF_FILENAME
+        );
+        $fs->create_file_from_pathname($fileinfo, $destfile);
+
+        @unlink($sourcefile);
+        @unlink($destfile);
+        @rmdir($temparea);
+        @rmdir(dirname($temparea));
+
+        return true;
     }
 
     public function update_comment_page($userid, $pageno) {
