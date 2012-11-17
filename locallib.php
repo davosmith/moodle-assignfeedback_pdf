@@ -63,7 +63,9 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return bool true if elements were added to the form
      */
     public function get_form_elements($grade, MoodleQuickForm $mform, stdClass $data) {
-        $mform->addElement('static', '', '', $this->annotate_link($grade));
+        if ($grade) {
+            $mform->addElement('static', '', '', $this->annotate_link($grade));
+        }
         return true;
     }
 
@@ -103,6 +105,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         // TODO davo - add link to download PDF (once generated)
         $cm = $this->assignment->get_course_module();
         $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'userid' => $grade->userid));
+
+        $returnparams = $this->assignment->get_return_params();
+        if (isset($returnparams['rownum'])) {
+            $url->param('rownum', $returnparams['rownum']); // Nasty hack to get back to where we started from.
+        }
 
         return html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
     }
@@ -269,8 +276,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         // Close the window (if the user clicks on 'savedraft')
         if ($enableedit && $savedraft) {
-            $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id, 'action' => 'grading'));
-            redirect($redir);
+            $this->back_to_grading();
         }
 
         // Generate the response PDF and cose the window, if requested
@@ -285,8 +291,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 $updated->data2 = $submission->data2;
                 $DB->update_record('assign_submission', $updated);
                 */
-                $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id, 'action' => 'grading'));
-                redirect($redir);
+                $this->back_to_grading();
 
             } else {
                 echo $OUTPUT->header(get_string('feedback', 'assignment').':'.format_string($this->assignment->name));
@@ -378,6 +383,17 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $PAGE->requires->js_init_call('uploadpdf_init', null, true, $jsmodule);
 
         echo $OUTPUT->footer();
+    }
+
+    protected function back_to_grading() {
+        $cm = $this->assignment->get_course_module();
+        $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id, 'action' => 'grading'));
+        $rownum = optional_param('rownum', null, PARAM_INT);
+        if (!is_null($rownum)) {
+            $redir->param('rownum', $rownum);
+            $redir->param('action', 'grade');
+        }
+        redirect($redir);
     }
 
     protected function output_controls($submission, $user, $pageno, $enableedit, $showprevious) {

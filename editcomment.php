@@ -33,8 +33,12 @@ $id   = required_param('id', PARAM_INT);
 $userid = optional_param('userid', 0, PARAM_INT);
 $pageno = optional_param('pageno', 1, PARAM_INT);
 $action = optional_param('action', null, PARAM_TEXT);
+$rownum = optional_param('rownum', null, PARAM_INT);
 
 $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('userid'=>$userid, 'pageno'=>$pageno, 'id' => $id));
+if (!is_null($rownum)) {
+    $url->param('rownum', $rownum);
+}
 $cm = get_coursemodule_from_id('assign', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
