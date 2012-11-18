@@ -44,6 +44,7 @@ $string['downloadresponse'] = 'Download response';
 $string['draftsaved'] = 'Draft saved';
 $string['emptyquicklist'] = 'No items in Quicklist';
 $string['emptyquicklist_instructions'] = 'Right-click on a comment to copy it to the Quicklist';
+$string['emptysubmission'] = 'Empty submission';
 $string['enabled'] = 'PDF feedback';
 $string['enabled_help'] = 'This allows the online annotation of PDFs (submitted via the PDF submission type) and the returning of the annotated work to students.';
 $string['eraseicon'] = 'e - erase lines and shapes';

@@ -54,6 +54,38 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return get_string('pdf', 'assignfeedback_pdf');
     }
 
+
+    protected function get_userid_because_assign_really_does_not_want_to_tell_me() {
+        // Find the current row from the assignment 'return_params'
+        $params = $this->assignment->get_return_params();
+        if (!isset($params['rownum'])) {
+            return false;
+        }
+        $rownum = $params['rownum'];
+
+        // Figure out the offset, based on the $_REQUEST global, as $_GET/$_POST (and hence 'optional_param') are empty
+        if (isset($_REQUEST['nosaveandnext']) || isset($_REQUEST['saveandshownext'])) {
+            $rownum++;
+        } else if (isset($_REQUEST['nosaveandprevious'])) {
+            $rownum--;
+        }
+
+        // This part is copied out of the 'assign' class (as it is private, so I can't use it directly).
+        $filter = get_user_preferences('assign_filter', '');
+        $table = new assign_grading_table($this->assignment, 0, $filter, 0, false);
+
+        $last = false;
+        $userid = $table->get_cell_data($rownum, 'userid', $last);
+
+        return $userid;
+    }
+
+    protected function get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($userid) {
+        global $DB;
+        $assignmentid = $this->assignment->get_instance()->id;
+        return $DB->get_field('assign_submission', 'id', array('assignment' => $assignmentid, 'userid' => $userid));
+    }
+
     /**
      * Get form elements for grading form
      *
@@ -63,8 +95,19 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return bool true if elements were added to the form
      */
     public function get_form_elements($grade, MoodleQuickForm $mform, stdClass $data) {
-        if ($grade) {
-            $mform->addElement('static', '', '', $this->annotate_link($grade));
+        if (isset($grade->userid)) {
+            $userid = $grade->userid;
+        } else {
+            $userid = $this->get_userid_because_assign_really_does_not_want_to_tell_me();
+        }
+        $submissionid = $this->get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
+        $annotatelink = $this->annotate_link($userid, $submissionid);
+        if ($annotatelink) {
+            $mform->addElement('static', '', '', $annotatelink);
+        }
+        $responselink = $this->response_link($submissionid);
+        if ($responselink) {
+            $mform->addElement('static', '', '', $responselink);
         }
         return true;
     }
@@ -77,19 +120,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view_summary(stdClass $grade, & $showviewlink) {
-        return $this->annotate_link($grade);
-
-        /*
-        $count = $this->count_files($grade->id, ASSIGNFEEDBACK_FILE_FILEAREA);
-        // show a view all link if the number of files is over this limit
-        $showviewlink = $count > ASSIGNFEEDBACK_FILE_MAXSUMMARYFILES;
-
-        if ($count <= ASSIGNFEEDBACK_FILE_MAXSUMMARYFILES) {
-            return $this->assignment->render_area_files('assignfeedback_file', ASSIGNFEEDBACK_FILE_FILEAREA, $grade->id);
-        } else {
-            return get_string('countfiles', 'assignfeedback_file', $count);
-        }
-        */
+        return $this->response_link($grade->id);
     }
 
     /**
@@ -98,34 +129,45 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view(stdClass $grade) {
-        return $this->annotate_link($grade);
+        return $this->response_link($grade->id);
     }
 
-    protected function annotate_link(stdClass $grade) {
-        global $DB, $USER;
-
-        $out = array();
+    protected function annotate_link($userid, $submissionid) {
+        global $DB;
         $context = $this->assignment->get_context();
         if (has_capability('mod/assign:grade', $context)) {
+            $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $submissionid));
+            if ($status == ASSIGNSUBMISSION_PDF_STATUS_EMPTY) {
+                return get_string('emptysubmission', 'assignfeedback_pdf');
+            }
+            if ($status != ASSIGNSUBMISSION_PDF_STATUS_SUBMITTED && $status != ASSIGNSUBMISSION_PDF_STATUS_RESPONDED) {
+                return ''; // Not yet submitted for marking.
+            }
             // Add 'annotate submission' link.
             $cm = $this->assignment->get_course_module();
-            $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'userid' => $grade->userid));
+            $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'userid' => $userid));
             $returnparams = $this->assignment->get_return_params();
             if (isset($returnparams['rownum'])) {
                 $url->param('rownum', $returnparams['rownum']); // Nasty hack to get back to where we started from.
             }
-            $out[] = html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
+            return html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
         }
 
-        $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $grade->id));
+        return '';
+    }
+
+    protected function response_link($submissionid) {
+        global $DB;
+
+        $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $submissionid));
         if ($status == ASSIGNSUBMISSION_PDF_STATUS_RESPONDED) {
             // Add 'download response' link
+            $context = $this->assignment->get_context();
             $downloadurl = moodle_url::make_pluginfile_url($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE,
-                                                           $grade->id, '/', ASSIGNFEEDBACK_PDF_FILENAME, true);
-            $out[] = html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
+                                                           $submissionid, '/', ASSIGNFEEDBACK_PDF_FILENAME, true);
+            return html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
         }
-
-        return implode('<br />', $out);
+        return '';
     }
 
     /**
