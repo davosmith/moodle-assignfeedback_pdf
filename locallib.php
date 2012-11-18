@@ -129,7 +129,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view_summary(stdClass $grade, & $showviewlink) {
-        return $this->response_link($grade->id);
+        $submissionid = $this->get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($grade->userid);
+        return $this->response_link($submissionid);
     }
 
     /**
@@ -138,7 +139,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view(stdClass $grade) {
-        return $this->response_link($grade->id);
+        $submissionid = $this->get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($grade->userid);
+        return $this->response_link($submissionid);
     }
 
     protected function annotate_link($userid, $submissionid) {
@@ -347,10 +349,27 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         // Generate the response PDF and cose the window, if requested
         if ($enableedit && $generateresponse) {
             if ($this->create_response_pdf($submission->id)) {
+                // Update the submission status.
                 $updated = new stdClass();
                 $updated->id = $submissionpdf->id;
                 $updated->status = ASSIGNSUBMISSION_PDF_STATUS_RESPONDED;
                 $DB->update_record('assignsubmission_pdf', $updated);
+
+                // Make sure there is a grade record for this submission (or it won't appear in the overview page).
+                if (!$DB->record_exists('assign_grades', array('assignment' => $this->assignment->get_instance()->id,
+                                                              'userid' => $user->id))) {
+                    $ins = new stdClass();
+                    $ins->assignment = $this->assignment->get_instance()->id;
+                    $ins->userid = $user->id;
+                    $ins->timecreated = time();
+                    $ins->timemodified = time();
+                    $ins->grader = $USER->id;
+                    $ins->grade = null;
+                    $ins->locked = 0;
+                    $ins->mailed = 0;
+                    $DB->insert_record('assign_grades', $ins);
+                }
+
                 $this->back_to_grading();
 
             } else {
