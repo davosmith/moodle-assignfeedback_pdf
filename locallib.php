@@ -55,7 +55,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
 
-    protected function get_userid_because_assign_really_does_not_want_to_tell_me() {
+    protected function get_rownum() {
         // Find the current row from the assignment 'return_params'
         $params = $this->assignment->get_return_params();
         if (!isset($params['rownum'])) {
@@ -68,6 +68,15 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $rownum++;
         } else if (isset($_REQUEST['nosaveandprevious'])) {
             $rownum--;
+        }
+
+        return $rownum;
+    }
+
+    protected function get_userid_because_assign_really_does_not_want_to_tell_me() {
+        $rownum = $this->get_rownum();
+        if ($rownum === false) {
+            return false;
         }
 
         // This part is copied out of the 'assign' class (as it is private, so I can't use it directly).
@@ -146,9 +155,9 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             // Add 'annotate submission' link.
             $cm = $this->assignment->get_course_module();
             $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'userid' => $userid));
-            $returnparams = $this->assignment->get_return_params();
-            if (isset($returnparams['rownum'])) {
-                $url->param('rownum', $returnparams['rownum']); // Nasty hack to get back to where we started from.
+            $rownum = $this->get_rownum();
+            if ($rownum !== false) {
+                $url->param('rownum', $rownum); // Nasty hack to get back to where we started from.
             }
             return html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
         }
