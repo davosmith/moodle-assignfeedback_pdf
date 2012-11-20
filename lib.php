@@ -57,19 +57,18 @@ function assignfeedback_pdf_pluginfile($course, $cm, context $context, $filearea
 
     require_once($CFG->dirroot.'/mod/assign/locallib.php');
     $filename = array_pop($args);
-    $filepath = '/';
+    if (empty($args)) {
+        $filepath = '/';
+    } else {
+        $filepath = '/'.implode('/', $args).'/';
+    }
     if ($filearea == ASSIGNFEEDBACK_PDF_FA_IMAGE) {
         if ($submission->status != ASSIGN_SUBMISSION_STATUS_SUBMITTED) {
             return false; // Not submitted for marking.
         }
-        if (empty($args)) {
-            $filepath = '/';
-        } else {
-            $filepath = '/'.implode('/', $args).'/';
-        }
     } else if ($filearea == ASSIGNFEEDBACK_PDF_FA_RESPONSE) {
-        if ($filename != ASSIGNFEEDBACK_PDF_FILENAME || !empty($args)) {
-            return false; // Check filename and path (empty)
+        if ($filename != ASSIGNFEEDBACK_PDF_FILENAME) {
+            return false; // Check filename
         }
         if ($submission->status != ASSIGN_SUBMISSION_STATUS_SUBMITTED) {
             return false; // Not submitted for marking.

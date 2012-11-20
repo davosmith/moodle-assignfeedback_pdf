@@ -89,10 +89,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $userid;
     }
 
-    protected function get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($userid) {
+    protected function get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($userid) {
         global $DB;
         $assignmentid = $this->assignment->get_instance()->id;
-        return $DB->get_field('assign_submission', 'id', array('assignment' => $assignmentid, 'userid' => $userid));
+        return $DB->get_record('assign_submission', array('assignment' => $assignmentid, 'userid' => $userid));
     }
 
     /**
@@ -109,12 +109,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         } else {
             $userid = $this->get_userid_because_assign_really_does_not_want_to_tell_me();
         }
-        $submissionid = $this->get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
-        $annotatelink = $this->annotate_link($userid, $submissionid);
+        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
+        $annotatelink = $this->annotate_link($userid, $submission);
         if ($annotatelink) {
             $mform->addElement('static', '', '', $annotatelink);
         }
-        $responselink = $this->response_link($submissionid);
+        $responselink = $this->response_link($submission);
         if ($responselink) {
             $mform->addElement('static', '', '', $responselink);
         }
@@ -129,8 +129,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view_summary(stdClass $grade, & $showviewlink) {
-        $submissionid = $this->get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($grade->userid);
-        return $this->response_link($submissionid);
+        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($grade->userid);
+        return $this->response_link($submission);
     }
 
     /**
@@ -139,8 +139,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view(stdClass $grade) {
-        $submissionid = $this->get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($grade->userid);
-        return $this->response_link($submissionid);
+        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($grade->userid);
+        return $this->response_link($submission);
     }
 
     public function supports_quickgrading() {
@@ -148,10 +148,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     public function get_quickgrading_html($userid, $grade) {
-        $submissionid = $this->get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
+        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
 
-        $annotate = $this->annotate_link($userid, $submissionid);
-        $resp = $this->response_link($submissionid);
+        $annotate = $this->annotate_link($userid, $submission);
+        $resp = $this->response_link($submission);
 
         if (!$resp) {
             return $annotate;
@@ -159,11 +159,14 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $annotate.'<br />'.$resp;
     }
 
-    protected function annotate_link($userid, $submissionid) {
+    protected function annotate_link($userid, $submission) {
         global $DB;
+        if (!$submission || $submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
+            return '';
+        }
         $context = $this->assignment->get_context();
         if (has_capability('mod/assign:grade', $context)) {
-            $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $submissionid));
+            $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $submission->id));
             if ($status == ASSIGNSUBMISSION_PDF_STATUS_EMPTY) {
                 return get_string('emptysubmission', 'assignfeedback_pdf');
             }
@@ -183,15 +186,19 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return '';
     }
 
-    protected function response_link($submissionid) {
+    protected function response_link($submission) {
         global $DB;
 
-        $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $submissionid));
+        if (!$submission || $submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
+            return '';
+        }
+        $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $submission->id));
         if ($status == ASSIGNSUBMISSION_PDF_STATUS_RESPONDED) {
             // Add 'download response' link
             $context = $this->assignment->get_context();
             $downloadurl = moodle_url::make_pluginfile_url($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE,
-                                                           $submissionid, '/', ASSIGNFEEDBACK_PDF_FILENAME, true);
+                                                           $submission->id, $this->get_subfolder(), ASSIGNFEEDBACK_PDF_FILENAME,
+                                                           true);
             return html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
         }
         return '';
@@ -515,11 +522,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         // 'Download original' button
         $pdfurl = moodle_url::make_pluginfile_url($context->id, 'assignsubmission_pdf', ASSIGNSUBMISSION_PDF_FA_FINAL,
-                                                  $submission->id, '/', ASSIGNSUBMISSION_PDF_FILENAME, true);
+                                                  $submission->id, $this->get_subfolder(), ASSIGNSUBMISSION_PDF_FILENAME, true);
         $downloadorig = get_string('downloadoriginal', 'assignfeedback_pdf');
         if (!$enableedit) {
             $pdfurl = moodle_url::make_pluginfile_url($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE,
-                                                      $submission->id, '/', ASSIGNFEEDBACK_PDF_FILENAME, true);
+                                                      $submission->id, $this->get_subfolder(), ASSIGNFEEDBACK_PDF_FILENAME, true);
         }
         $img = $OUTPUT->pix_icon('download', $downloadorig, 'assignfeedback_pdf');
         $saveopts .= html_writer::link($pdfurl, $img, array('id' => 'downloadpdf', 'title' => $downloadorig,
@@ -737,7 +744,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $fs = get_file_storage();
         // If pagecount is 0, then we need to skip down to the next stage to find the real page count
         if ($pagecount && ($file = $fs->get_file($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_IMAGE,
-                                                 $submission->id, '/', $pagefilename)) ) {
+                                                 $submission->id, $this->get_subfolder(), $pagefilename)) ) {
             if ($ret = self::get_image_details($file, $pagecount)) {
                 return $ret;
             }
@@ -763,7 +770,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
 
         $file = $fs->get_file($context->id, 'assignsubmission_pdf', ASSIGNSUBMISSION_PDF_FA_FINAL, $submission->id,
-                              '/', ASSIGNSUBMISSION_PDF_FILENAME);
+                              $this->get_subfolder(), ASSIGNSUBMISSION_PDF_FILENAME);
         if (!$file) {
             throw new moodle_exception('errornosubmission', 'assignfeedback_pdf');
         }
@@ -793,7 +800,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             'component' => 'assignfeedback_pdf',
             'filearea' => ASSIGNFEEDBACK_PDF_FA_IMAGE,
             'itemid' => $submission->id,
-            'filepath' => '/',
+            'filepath' => $this->get_subfolder(),
             'filename' => $pagefilename
         );
         $file = $fs->create_file_from_pathname($imginfo, $imagefolder.'/'.$imgname); // Copy the image into the file storage
@@ -821,7 +828,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $context = $this->assignment->get_context();
         $fs = get_file_storage();
         $file = $fs->get_file($context->id, 'assignsubmission_pdf', ASSIGNSUBMISSION_PDF_FA_FINAL, $submissionid,
-                              '/', ASSIGNSUBMISSION_PDF_FILENAME);
+                              $this->get_subfolder(), ASSIGNSUBMISSION_PDF_FILENAME);
         if (!$file) {
             throw new moodle_exception('errornosubmission2', 'assignfeedback_pdf');
         }
@@ -887,7 +894,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $mypdf->save_pdf($destfile);
 
         // Delete any previous response file
-        if ($file = $fs->get_file($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE, $submissionid, '/', ASSIGNFEEDBACK_PDF_FILENAME) ) {
+        if ($file = $fs->get_file($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE, $submissionid,
+                                  $this->get_subfolder(), ASSIGNFEEDBACK_PDF_FILENAME) ) {
             $file->delete();
         }
 
@@ -896,7 +904,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             'component' => 'assignfeedback_pdf',
             'filearea' => ASSIGNFEEDBACK_PDF_FA_RESPONSE,
             'itemid' => $submissionid,
-            'filepath' => '/',
+            'filepath' => $this->get_subfolder(),
             'filename' => ASSIGNFEEDBACK_PDF_FILENAME
         );
         $fs->create_file_from_pathname($fileinfo, $destfile);
@@ -1164,5 +1172,39 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
 
         echo json_encode($resp);
+    }
+
+    protected function get_resubmission_number() {
+        global $DB;
+
+        // Work around not being able to directly get the config from the 'assignsubmission_pdf' plugin.
+        if (!$this->assignment->has_instance()) {
+            throw new coding_exception("Should not be asking for resubmission number without assignment instance");
+        }
+
+        $assignment = $this->assignment->get_instance();
+        $resub = $DB->get_field('assign_plugin_config', 'value', array('assignment' => $assignment->id,
+                                                                 'subtype' => 'submission',
+                                                                 'plugin' => 'assignsubmission_pdf',
+                                                                 'name' => 'resubmission'));
+        if ($resub === false) {
+            $resub = 1;
+            $ins = new stdClass();
+            $ins->value = $resub;
+            $ins->name = 'resubmission';
+            $ins->plugin = 'assignsubmission_pdf';
+            $ins->subtype = 'submission';
+            $ins->assignment = $assignment->id;
+            $DB->insert_record('assign_plugin_config', $ins);
+        }
+
+        return $resub;
+    }
+
+    protected function get_subfolder($resubmission = null) {
+        if (is_null($resubmission)) {
+            $resubmission = $this->get_resubmission_number();
+        }
+        return '/'.$resubmission.'/';
     }
 }
