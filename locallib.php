@@ -143,6 +143,22 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $this->response_link($submissionid);
     }
 
+    public function supports_quickgrading() {
+        return true;
+    }
+
+    public function get_quickgrading_html($userid, $grade) {
+        $submissionid = $this->get_submissionid_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
+
+        $annotate = $this->annotate_link($userid, $submissionid);
+        $resp = $this->response_link($submissionid);
+
+        if (!$resp) {
+            return $annotate;
+        }
+        return $annotate.'<br />'.$resp;
+    }
+
     protected function annotate_link($userid, $submissionid) {
         global $DB;
         $context = $this->assignment->get_context();
