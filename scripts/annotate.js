@@ -1491,13 +1491,7 @@ function doscrolltocomment(commentid) {
 }
 
 function startjs() {
-    //new Asset.css('style/annotate.css');
-    new Asset.css(server_config.css_path+'menu.css');
-    new Asset.css(server_config.css_path+'button.css');
-
     server = new ServerComm(server_config);
-
-    document.body.className += ' yui-skin-sam'; // TODO davo - check if still needed
 
     if (server.editing) {
         if (document.getElementById('choosecolour')) {
