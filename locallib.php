@@ -160,7 +160,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     protected function annotate_link($userid, $submission) {
-        global $DB;
+        global $DB, $OUTPUT;
         if (!$submission || $submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
             return '';
         }
@@ -180,14 +180,16 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             if ($rownum !== false) {
                 $url->param('rownum', $rownum); // Nasty hack to get back to where we started from.
             }
-            return html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
+            $ret = $OUTPUT->pix_icon('annotate', '', 'assignfeedback_pdf');
+            $ret .= html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
+            return $ret;
         }
 
         return '';
     }
 
     protected function response_link($submission) {
-        global $DB;
+        global $DB, $OUTPUT;
 
         if (!$submission || $submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
             return '';
@@ -199,7 +201,9 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $downloadurl = moodle_url::make_pluginfile_url($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE,
                                                            $submission->id, $this->get_subfolder(), ASSIGNFEEDBACK_PDF_FILENAME,
                                                            true);
-            return html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
+            $ret = $OUTPUT->pix_icon('t/download', '');
+            $ret .= html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
+            return $ret;
         }
         return '';
     }
