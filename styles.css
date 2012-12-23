@@ -162,3 +162,10 @@
 .path-mod-assign-feedback-pdf #page-content .region-content {
     overflow: visible;
 }
+
+.assignfeedback_pdf_noblocks #region-pre {
+    display: none;
+}
+.assignfeedback_pdf_noblocks #page-content #region-main-wrap {
+    width: auto;
+}

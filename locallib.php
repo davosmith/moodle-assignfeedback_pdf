@@ -231,9 +231,17 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     /**
      * Return true if there are no feedback files
      * @param stdClass $grade
+     * @return bool
      */
     public function is_empty(stdClass $grade) {
-        // TODO davo - return true if response has not yet been generated
+        global $DB;
+        $userid = $grade->userid;
+        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
+        if ($submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
+            return true;
+        }
+        $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $submission->id));
+        return $status != ASSIGNSUBMISSION_PDF_STATUS_RESPONDED;
     }
 
     /**
@@ -352,12 +360,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             if ($showprevious != -1) {
                 echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">';
                 echo '<html><head><title>'.get_string('feedback', 'assign').':'.fullname($user, true).':'.format_string($assignment->name).'</title></head>';
-                echo html_writer::start_tag('frameset', array('cols' => "60%, 40%"));
-                $mainframeurl = new moodle_url('/mod/assign/feedback/editcomment.php', array('id' => $cm->id,
+                echo html_writer::start_tag('frameset', array('cols' => "70%, 30%"));
+                $mainframeurl = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id,
                                                                                   'userid' => $userid,
                                                                                   'pageno' => $pageno,
-                                                                                  'showprevious' => $showprevious));
-                $sideframeurl = new moodle_url('/mod/assign/feedback/editcomment.php', array('id' => $cm->id,
+                                                                                  'showprevious' => $showprevious,
+                                                                                           ));
+                $sideframeurl = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id,
                                                                                        'userid' => $userid,
                                                                                        'action' => 'showprevious'));
                 echo html_writer::empty_tag('frame', array('src' => $mainframeurl));
@@ -403,7 +412,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 $this->back_to_grading();
 
             } else {
-                echo $OUTPUT->header(get_string('feedback', 'assignment').':'.format_string($this->assignment->name));
+                echo $OUTPUT->header(get_string('feedback', 'assignment').':'.format_string($this->assignment->get_instance()->name));
                 print_error('responseproblem', 'assignfeedback_pdf');
                 die();
             }
@@ -544,9 +553,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         // Show previous assignment
         if ($enableedit) {
-            // TODO davo - test this works
             $ps_sql = "SELECT asn.id, asn.name
-                       FROM {assignment} asn
+                       FROM {assign} asn
                        JOIN {assignsubmission_pdf} subp ON subp.assignment = asn.id
                        JOIN {assign_submission} sub ON sub.id = subp.submission
                        WHERE asn.course = ?
@@ -584,14 +592,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $saveopts .= html_writer::select($outcomments, 'findcomments', '', false, array('id' => 'findcommentsselect'));
 
         if (!$enableedit) {
-            // TODO davo - check if this is still needed
-            /*
             // If opening in same window - show 'back to comment list' link
             if (array_key_exists('uploadpdf_commentnewwindow', $_COOKIE) && !$_COOKIE['uploadpdf_commentnewwindow']) {
-                $url = "editcomment.php?a={$this->assignment->id}&amp;userid={$userid}&amp;action=showprevious";
-                echo '<a href="'.$url.'">'.get_string('backtocommentlist','assignfeedback_pdf').'</a>';
+                $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $this->assignment->get_course_module()->id,
+                                                                                  'userid' => $user->id,
+                                                                                  'action' => 'showprevious'));
+                echo html_writer::link($url, get_string('backtocommentlist','assignfeedback_pdf'));
             }
-            */
         }
 
         $out .= html_writer::tag('div', $saveopts, array('id' => 'saveoptions'));
@@ -717,6 +724,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     /**
      * Get the image details from a file and return them.
      * @param stored_file $file
+     * @param $pagecount
      * @return mixed array|false
      */
     protected static function get_image_details($file, $pagecount) {
@@ -725,11 +733,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                                                       $file->get_filearea(), $file->get_itemid(),
                                                       $file->get_filepath(), $file->get_filename());
             // Prevent browser from caching image if it has changed
-            if (strpos($imgurl, '?') === false) {
-                $imgurl .= '?ts='.$file->get_timemodified();
-            } else {
-                $imgurl .= '&amp;ts='.$file->get_timemodified();
-            }
+            $imgurl->param('ts', $file->get_timemodified());
             return array($imgurl, $imageinfo['width'], $imageinfo['height'], $pagecount);
         }
         // Something went wrong
@@ -826,7 +830,103 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     public function show_previous_comments($userid) {
-        // TODO davo - finish this
+        global $CFG, $DB, $PAGE, $OUTPUT;
+
+        // TODO davo - get this to display the details of the *previous* assignment!!!
+
+        $context = $this->assignment->get_context();
+        require_capability('mod/assignment:grade', $context);
+
+        $assignment = $this->assignment->get_instance();
+        $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
+        $params = array('assignment' => $assignment->id, 'userid' => $userid);
+        $submission = $DB->get_record('assign_submission', $params, '*', MUST_EXIST);
+        $params = array('assignment' => $assignment->id, 'submission' => $submission->id);
+        $submissionpdf = $DB->get_record('assignsubmission_pdf', $params, '*', MUST_EXIST);
+        $submission->numpages = $submissionpdf->numpages;
+        $cm = $this->assignment->get_course_module();
+
+        $PAGE->set_pagelayout('popup');
+        $PAGE->set_title(get_string('feedback', 'assignment').':'.fullname($user, true).':'.format_string($assignment->name));
+        $PAGE->set_heading('');
+        echo $OUTPUT->header();
+
+        // Nasty javascript hack to stop the page being a minimum of 900 pixels wide
+        echo '<script type="text/javascript">document.getElementById("page-content").setAttribute("style", "min-width:0px;");</script>';
+
+        echo $OUTPUT->heading(format_string($assignment->name), 2);
+
+        // Add download link for submission
+        $fs = get_file_storage();
+        if ( !($file = $fs->get_file($context->id, 'mod_assign', ASSIGNFEEDBACK_PDF_FA_RESPONSE, $submission->id,
+                                     $this->get_subfolder(), ASSIGNFEEDBACK_PDF_FILENAME)) ) {
+            $file = $fs->get_file($context->id, 'mod_assign', ASSIGNSUBMISSION_PDF_FA_FINAL, $submission->id,
+                                  $this->get_subfolder(), ASSIGNSUBMISSION_PDF_FILENAME);
+        }
+
+        if ($file) {
+            $pdfurl = moodle_url::make_pluginfile_url($file->get_contextid(), $file->get_component(),
+                                                      $file->get_filearea(), $file->get_itemid(), $file->get_filepath(),
+                                                      $file->get_filename(), true);
+            echo html_writer::link($pdfurl, get_string('downloadoriginal', 'assignment_uploadpdf'));
+        }
+
+        // 'Open in new window' check box
+        $checked = "checked='checked'";
+        if (array_key_exists('uploadpdf_commentnewwindow', $_COOKIE)) {
+            if (!$_COOKIE['uploadpdf_commentnewwindow']) {
+                $checked = '';
+            }
+        }
+        $onclick = "var checked = this.checked ? 1 : 0; document.cookie='uploadpdf_commentnewwindow='+checked; return true;";
+        echo '<br/><input type="checkbox" name="opennewwindow" id="opennewwindow" '.$checked.' onclick="'.$onclick.'" />';
+        echo '<label for="opennewwindow">'.get_string('openlinknewwindow','assignment_uploadpdf').'</label><br/>';
+
+        // Put all the comments in a table
+        $comments = $DB->get_records('assignfeedback_pdf_cmnt', array('submissionid' => $submission->id), 'pageno, posy');
+        if (!$comments) {
+            echo '<p>'.get_string('nocomments','assignment_uploadpdf').'</p>';
+
+            /* This does not work well when the student has not submitted anything
+            $linkurl = '/mod/assignment/type/uploadpdf/editcomment.php?a='.$this->assignment->id.'&amp;userid='.$user->id.'&amp;pageno=1&amp;action=showpreviouspage';
+
+            $title = fullname($user, true).':'.format_string($this->assignment->name);
+            $onclick = "var el = document.getElementById('opennewwindow'); if (el && !el.checked) { return true; } ";
+            $onclick .= "this.target='showpage{$userid}'; ";
+            $onclick .= "return openpopup('{$linkurl}', 'showpage{$userid}', ";
+            $onclick .= "'menubar=0,location=0,scrollbars,resizable,width=700,height=700', 0)";
+
+            $link = '<a title="'.$title.'" href="'.$CFG->wwwroot.$linkurl.'" onclick="'.$onclick.'">'.get_string('openfirstpage','assignment_uploadpdf').'</a>';
+
+            echo '<p>'.$link.'</p>';
+            */
+        } else {
+            $style1 = ' style="border: black 1px solid;"';
+            $style2 = ' style="border: black 1px solid; text-align: center;" ';
+            echo '<table'.$style1.'><tr><th'.$style1.'>'.get_string('pagenumber','assignment_uploadpdf').'</th>';
+            echo '<th'.$style1.'>'.get_string('comment','assignfeedback_pdf').'</th></tr>';
+            //$othercm = get_coursemodule_from_instance('mod_assign', )
+            foreach ($comments as $comment) {
+                $linkurl = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id,
+                                                                                           'userid' => $user->id,
+                                                                                           'pageno' => $comment->pageno,
+                                                                                           'commentid' => $comment->id,
+                                                                                           'action' => 'showpreviouspage'));
+
+                $title = fullname($user, true).':'.format_string($assignment->name).':'.$comment->pageno;
+                $onclick = "var el = document.getElementById('opennewwindow'); if (el && !el.checked) { return true; } ";
+                $onclick .= "this.target='showpage{$userid}'; ";
+                $onclick .= "return openpopup('".$linkurl->out(false)."', 'showpage{$userid}', ";
+                $onclick .= "'menubar=0,location=0,scrollbars,resizable,width=700,height=700', 0)";
+
+                $link = '<a title="'.$title.'" href="'.$linkurl->out().'" onclick="'.$onclick.'">'.$comment->pageno.'</a>';
+
+                echo '<tr><td'.$style2.'>'.$link.'</td>';
+                echo '<td'.$style1.'>'.s($comment->rawtext).'</td></tr>';
+            }
+            echo '</table>';
+        }
+        echo $OUTPUT->footer();
     }
 
     public function create_response_pdf($submissionid) {
@@ -1090,6 +1190,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 send_error('Requested page number is too small (< 1)', ASSIGNFEEDBACK_PDF_ERR_BAD_PAGE_NO);
             }
 
+            /** @var moodle_url $imageurl */
             list($imageurl, $imgwidth, $imgheight, $pagecount) = $this->get_page_image($pageno, $submission);
 
             if ($pageno > $pagecount) {
@@ -1098,7 +1199,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             }
 
             $resp['image'] = new stdClass();
-            $resp['image']->url = $imageurl;
+            $resp['image']->url = $imageurl->out();
             $resp['image']->width = $imgwidth;
             $resp['image']->height = $imgheight;
 
@@ -1183,6 +1284,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
     protected function get_resubmission_number() {
         global $DB;
+
+        static $resub = null;
+
+        if (!is_null($resub)) {
+            return $resub;
+        }
 
         // Work around not being able to directly get the config from the 'assignsubmission_pdf' plugin.
         if (!$this->assignment->has_instance()) {
