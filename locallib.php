@@ -420,11 +420,6 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         list($imageurl, $imgwidth, $imgheight, $pagecount) = $this->get_page_image($pageno, $submission);
 
-        $PAGE->requires->js('/mod/assign/feedback/pdf/scripts/mootools-core-1.4.1.js');
-        $PAGE->requires->js('/mod/assign/feedback/pdf/scripts/mootools-more-1.4.0.1.js');
-        $PAGE->requires->js('/mod/assign/feedback/pdf/scripts/raphael-min.js');
-        $PAGE->requires->js('/mod/assign/feedback/pdf/scripts/contextmenu.js');
-
         //$PAGE->set_pagelayout('popup');
         $PAGE->set_title(get_string('feedback', 'assignment').':'.fullname($user, true).':'.format_string($assignment->name));
         $PAGE->set_heading('');
