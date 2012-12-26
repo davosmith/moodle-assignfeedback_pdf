@@ -1321,4 +1321,36 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
         return '/'.$resubmission.'/';
     }
+
+    public static function cron() {
+        global $DB;
+
+        if ($lastcron = get_config('assignfeedback_pdf', 'lastcron')) {
+            if ($lastcron + 86400 > time()) { /* Only check once a day for images */
+                return;
+            }
+        }
+
+        echo "Clear up images generated for pdf assignments\n";
+
+        $fs = get_file_storage();
+
+        $deletetime = time() - (21 * 86400); // 3 weeks ago - as students can now view feedback online, we need to keep images around for longer
+
+        // Ideally we would use: $fs->get_area_files('assignfeedback_pdf', 'image');
+        // However, this does not allow retrieval of files by timemodified
+        $to_clear = $DB->get_records_select('files', "component = 'assignfeedback_pdf' AND filearea = 'image' AND timemodified < ?", array($deletetime));
+        $tmpl_to_clear = $DB->get_records_select('files', "component = 'assignsubmission_pdf' AND filearea = 'previewimage' AND timemodified < ?", array($deletetime));
+        $to_clear = array_merge($to_clear, $tmpl_to_clear);
+
+        foreach ($to_clear as $filerecord) {
+            $file = $fs->get_file_by_hash($filerecord->pathnamehash);
+            if ($file && !$file->is_directory()) {
+                $file->delete();
+            }
+        }
+
+        $lastcron = time(); // Remember when the last cron job ran
+        set_config('lastcron', $lastcron, 'assignfeedback_pdf');
+    }
 }
