@@ -525,10 +525,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $saveopts .= html_writer::tag('button', $img, array('type' => 'submit', 'name' => 'savedraft',
                                                                'value' => 'savedraft', 'id' => 'savedraft',
                                                                'title' => get_string('savedraft', 'assignfeedback_pdf')));
+            $saveopts .= "\n";
             $img = $OUTPUT->pix_icon('tostudent', '', 'assignfeedback_pdf');
             $saveopts .= html_writer::tag('button', $img, array('type' => 'submit', 'name' => 'generateresponse',
                                                                'value' => 'generateresponse', 'id' => 'generateresponse',
                                                                'title' => get_string('generateresponse', 'assignfeedback_pdf')));
+            $saveopts .= "\n";
         }
 
         // 'Download original' button
@@ -618,15 +620,15 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $nexttipstr = get_string('keyboardnext', 'assignfeedback_pdf');
         $pagenos = range(1, $submission->numpages);
         $pagenos = array_combine($pagenos, $pagenos);
-        $select = html_writer::select($pagenos, 'selectpage', $pageno, false, array('id' => 'selectpage',
-                                                                                   'onChange' => 'selectpage();'));
+        $select = html_writer::select($pagenos, 'selectpage', $pageno, false, array('id' => 'selectpage'));
 
         $pageselector = '';
-        $pageselector .= html_writer::tag('button', $prevstr, array('id' => 'prevpage', 'onClick' => 'gotoprevpage();',
-                                                                   'title' => $prevtipstr));
+        $pageselector .= html_writer::tag('button', $prevstr, array('id' => 'prevpage', 'title' => $prevtipstr));
+        $pageselector .= "\n";
         $pageselector .= html_writer::tag('span', $select, array('style' => 'position:relative;width:50px;display:inline-block;height:34px;'));
-        $pageselector .= html_writer::tag('button', $nextstr, array('id' => 'nextpage', 'onClick' => 'gotonextpage();',
-                                                                   'title' => $nexttipstr));
+        $pageselector .= "\n";
+        $pageselector .= html_writer::tag('button', $nextstr, array('id' => 'nextpage', 'title' => $nexttipstr));
+        $pageselector .= "\n";
 
         return $pageselector;
     }

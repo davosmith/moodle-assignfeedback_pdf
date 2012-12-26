@@ -24,7 +24,7 @@ function uploadpdf_init(Y) {
                 context_quicklist = null;
                 context_comment = null;
                 quicklist = null; // Stores all the comments in the quicklist
-                pagelist = null; // Stores all the data for the preloaded pages
+                pagelist = []; // Stores all the data for the preloaded pages
                 waitingforpage = -1;  // Waiting for this page from the server - display as soon as it is received
                 pagestopreload = 4; // How many pages ahead to load when you hit a non-preloaded page
                 pagesremaining = pagestopreload; // How many more pages to preload before waiting
@@ -102,8 +102,54 @@ function uploadpdf_init(Y) {
                     server.getcomments();
                 }
 
-                function gotopage(pageno) {
+                function updatepagenavigation(pageno) {
                     var pagecount, el, i, opennew, on_link;
+                    pageno = parseInt(pageno, 10);
+                    pagecount = server_config.pagecount.toInt();
+
+                    // Set the dropdown selects to have the correct page number in them
+                    el = document.id('selectpage');
+                    for (i = 0; i < el.length; i += 1) {
+                        if (parseInt(el[i].value, 10) === pageno) {
+                            el.selectedIndex = i;
+                            break;
+                        }
+                    }
+                    el = document.id('selectpage2');
+                    for (i = 0; i < el.length; i += 1) {
+                        if (parseInt(el[i].value, 10) === pageno) {
+                            el.selectedIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (server.editing) {
+                        // Update the 'open in new window' link
+                        opennew = document.id('opennewwindow');
+                        on_link = opennew.get('href').replace(/pageno=\d+/, "pageno=" + pageno);
+                        opennew.set('href', on_link);
+                    }
+
+                    //Update the next/previous buttons
+                    if (pageno === pagecount) {
+                        nextbutton.set('disabled', true);
+                        document.id('nextpage2').set('disabled', 'disabled');
+                    } else {
+                        nextbutton.set('disabled', false);
+                        document.id('nextpage2').erase('disabled');
+                    }
+                    if (pageno === 1) {
+                        prevbutton.set('disabled', true);
+                        document.id('prevpage2').set('disabled', 'disabled');
+                    } else {
+                        prevbutton.set('disabled', false);
+                        document.id('prevpage2').erase('disabled');
+                    }
+                }
+
+                function gotopage(pageno) {
+                    var pagecount;
+                    pageno = parseInt(pageno, 10);
                     pagecount = server_config.pagecount.toInt();
                     if ((pageno <= pagecount) && (pageno > 0)) {
                         document.id('pdfholder').getElements('.comment').destroy(); // Destroy all the currently displayed comments
@@ -114,44 +160,7 @@ function uploadpdf_init(Y) {
                         editbox = null;
                         lasthighlight = null;
 
-                        // Set the dropdown selects to have the correct page number in them
-                        el = document.id('selectpage');
-                        for (i = 0; i < el.length; i += 1) {
-                            if (el[i].value === pageno) {
-                                el.selectedIndex = i;
-                                break;
-                            }
-                        }
-                        el = document.id('selectpage2');
-                        for (i = 0; i < el.length; i += 1) {
-                            if (el[i].value === pageno) {
-                                el.selectedIndex = i;
-                                break;
-                            }
-                        }
-
-                        if (server.editing) {
-                            // Update the 'open in new window' link
-                            opennew = document.id('opennewwindow');
-                            on_link = opennew.get('href').replace(/pageno=\d+/, "pageno=" + pageno);
-                            opennew.set('href', on_link);
-                        }
-
-                        //Update the next/previous buttons
-                        if (pageno === pagecount) {
-                            nextbutton.set('disabled', true);
-                            document.id('nextpage2').set('disabled', 'disabled');
-                        } else {
-                            nextbutton.set('disabled', false);
-                            document.id('nextpage2').erase('disabled');
-                        }
-                        if (pageno === 1) {
-                            prevbutton.set('disabled', true);
-                            document.id('prevpage2').set('disabled', 'disabled');
-                        } else {
-                            prevbutton.set('disabled', false);
-                            document.id('prevpage2').erase('disabled');
-                        }
+                        updatepagenavigation(pageno);
 
                         server.pageno = "" + pageno;
                         server.pageloadcount += 1;
@@ -395,7 +404,7 @@ function uploadpdf_init(Y) {
                         editbox = null;
                     }
                     if (currentcomment !== null) {
-                        if (content !== null || (content.trim() === '')) {
+                        if (content === null || (content.trim() === '')) {
                             id = currentcomment.retrieve('id');
                             if (id !== -1) {
                                 server.removecomment(id);
@@ -1608,9 +1617,9 @@ function uploadpdf_init(Y) {
                     }
 
                     var id, container;
-                    id = e.target.retrieve('id');
+                    id = this.retrieve('id');
                     if (id) {
-                        container = e.target.retrieve('container');
+                        container = this.retrieve('container');
                         allannotations.erase(container);
                         container.destroy();
                         server.removeannotation(id);
@@ -1806,6 +1815,10 @@ function uploadpdf_init(Y) {
                     prevbutton.on("click", gotoprevpage);
                     nextbutton = new YAHOO.widget.Button("nextpage");
                     nextbutton.on("click", gotonextpage);
+                    document.id('selectpage').addEvent('change', selectpage);
+                    document.id('selectpage2').addEvent('change', selectpage2);
+                    document.id('prevpage2').addEvent('click', gotoprevpage);
+                    document.id('nextpage2').addEvent('click', gotonextpage);
                     findcommentsmenu = new YAHOO.widget.Button("findcommentsbutton", {
                         type: "menu",
                         menu: "findcommentsselect",
@@ -1862,9 +1875,10 @@ function uploadpdf_init(Y) {
                     sel = document.id('selectpage');
                     selidx = sel.selectedIndex;
                     selpage = sel[selidx].value;
-                    if (selpage !== pageno) {
+                    if (parseInt(selpage, 10) !== pageno) {
                         gotopage(selpage);
                     } else {
+                        updatepagenavigation(pageno);
                         server.getimageurl(pageno + 1, false);
                     }
 
