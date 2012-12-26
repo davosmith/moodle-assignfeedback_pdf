@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The entry point for annotating a PDF
+ * The entry point for viewing an annotated PDF
  *
  * @package   mod_assign
  * @subpackage assignsubmission_pdf
@@ -25,20 +25,15 @@
  */
 
 require_once(dirname(__FILE__).'/../../../../config.php');
-global $CFG, $DB, $PAGE;
+global $CFG, $DB, $PAGE, $USER;
 require_once($CFG->dirroot.'/mod/assign/locallib.php');
 require_once($CFG->dirroot.'/mod/assign/submission/pdf/lib.php');
 
 $id   = required_param('id', PARAM_INT);
 $userid = optional_param('userid', 0, PARAM_INT);
 $pageno = optional_param('pageno', 1, PARAM_INT);
-$action = optional_param('action', null, PARAM_TEXT);
-$rownum = optional_param('rownum', null, PARAM_INT);
 
-$url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('userid'=>$userid, 'pageno'=>$pageno, 'id' => $id));
-if (!is_null($rownum)) {
-    $url->param('rownum', $rownum);
-}
+$url = new moodle_url('/mod/assign/feedback/pdf/viewcomment.php', array('userid'=>$userid, 'pageno'=>$pageno, 'id' => $id));
 $cm = get_coursemodule_from_id('assign', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
@@ -46,15 +41,15 @@ $PAGE->set_url($url);
 require_login($course, false, $cm);
 
 $context = context_module::instance($cm->id);
-require_capability('mod/assign:grade', $context);
+
+if ($userid && $userid != $USER->id) {
+    require_capability('mod/assign:grade', $context);
+} else {
+    require_capability('mod/assign:submit', $context);
+    $userid = $USER->id;
+}
 
 $assignment = new assign($context, $cm, $course);
 $feedbackpdf = new assign_feedback_pdf($assignment, 'feedback_pdf');
 
-if ($action == 'showprevious') {
-    $feedbackpdf->show_previous_comments($userid);
-} elseif ($action == 'showpreviouspage') {
-    $feedbackpdf->edit_comment_page($userid, $pageno, false);
-} else {
-    $feedbackpdf->edit_comment_page($userid, $pageno);
-}
+$feedbackpdf->edit_comment_page($userid, $pageno, false);

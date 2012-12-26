@@ -84,3 +84,4 @@ $string['servercommfailed'] = 'Server communication failed - do you want to rese
 $string['showpreviousassignment'] = 'Show previous assignment';
 $string['stamp'] = 'Choose stamp';
 $string['stampicon'] = 's - stamp';
+$string['viewresponse'] = 'View response online';
