@@ -1690,7 +1690,7 @@ function uploadpdf_init(Y) {
                     comments.each(function (comment) {
                         var dims, win, scroll, view, scrolltocoord;
 
-                        if (comment.retrieve('id') === commentid) {
+                        if (parseInt(comment.retrieve('id'), 10) === commentid) {
                             comment.addClass('comment-highlight');
                             lasthighlight = comment;
 
