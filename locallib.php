@@ -755,11 +755,22 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         $context = $this->assignment->get_context();
         $fs = get_file_storage();
+        $subfile = $fs->get_file($context->id, 'assignsubmission_pdf', ASSIGNSUBMISSION_PDF_FA_FINAL, $submission->id,
+                                 $this->get_subfolder(), ASSIGNSUBMISSION_PDF_FILENAME);
+        if (!$subfile) {
+            throw new moodle_exception('errornosubmission', 'assignfeedback_pdf');
+        }
+
         // If pagecount is 0, then we need to skip down to the next stage to find the real page count
         if ($pagecount && ($file = $fs->get_file($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_IMAGE,
                                                  $submission->id, $this->get_subfolder(), $pagefilename)) ) {
-            if ($ret = self::get_image_details($file, $pagecount)) {
-                return $ret;
+            if ($file->get_timemodified() < $subfile->get_timemodified()) {
+                // Check the image file was last generated before the most recent PDF was generated
+                $file->delete();
+            } else {
+                if ($ret = self::get_image_details($file, $pagecount)) {
+                    return $ret;
+                }
             }
             // If the image is bad in some way, try to create a new image instead
         }
@@ -782,12 +793,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             }
         }
 
-        $file = $fs->get_file($context->id, 'assignsubmission_pdf', ASSIGNSUBMISSION_PDF_FA_FINAL, $submission->id,
-                              $this->get_subfolder(), ASSIGNSUBMISSION_PDF_FILENAME);
-        if (!$file) {
-            throw new moodle_exception('errornosubmission', 'assignfeedback_pdf');
-        }
-        $file->copy_content_to($pdffile);  // Copy the PDF out of the file storage, into the temp area
+        $subfile->copy_content_to($pdffile);  // Copy the PDF out of the file storage, into the temp area
 
         $pagecount = $pdf->set_pdf($pdffile, $pagecount); // Only loads the PDF if the pagecount is unknown (0)
         if (!$submission->numpages && $pagecount) {
@@ -816,7 +822,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             'filepath' => $this->get_subfolder(),
             'filename' => $pagefilename
         );
-        $file = $fs->create_file_from_pathname($imginfo, $imagefolder.'/'.$imgname); // Copy the image into the file storage
+        $subfile = $fs->create_file_from_pathname($imginfo, $imagefolder.'/'.$imgname); // Copy the image into the file storage
 
         //Delete the temporary files
         @unlink($pdffile);
@@ -825,7 +831,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         @rmdir($pdffolder);
         @rmdir($tempfolder);
 
-        if ($ret = self::get_image_details($file, $pagecount)) {
+        if ($ret = self::get_image_details($subfile, $pagecount)) {
             return $ret;
         }
         return array(null, 0, 0, $pagecount);
