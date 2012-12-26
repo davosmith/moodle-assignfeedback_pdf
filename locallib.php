@@ -366,7 +366,9 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                                                                                   'pageno' => $pageno,
                                                                                   'showprevious' => $showprevious,
                                                                                            ));
-                $sideframeurl = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id,
+                $previouscm = get_coursemodule_from_instance('assign', $showprevious, $this->assignment->get_course()->id,
+                                                             false, MUST_EXIST);
+                $sideframeurl = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $previouscm->id,
                                                                                        'userid' => $userid,
                                                                                        'action' => 'showprevious'));
                 echo html_writer::empty_tag('frame', array('src' => $mainframeurl));
@@ -827,7 +829,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     public function show_previous_comments($userid) {
-        global $CFG, $DB, $PAGE, $OUTPUT;
+        global $DB, $PAGE, $OUTPUT;
 
         // TODO davo - get this to display the details of the *previous* assignment!!!
 
