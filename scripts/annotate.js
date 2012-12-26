@@ -1096,7 +1096,7 @@ function uploadpdf_init(Y) {
                 ServerComm = new Class({
                     Implements: [Events],
                     id: null,
-                    userid: null,
+                    submissionid: null,
                     pageno: null,
                     sesskey: null,
                     url: null,
@@ -1109,7 +1109,7 @@ function uploadpdf_init(Y) {
 
                     initialize: function (settings) {
                         this.id = settings.id;
-                        this.userid = settings.userid;
+                        this.submissionid = settings.submissionid;
                         this.pageno = settings.pageno;
                         this.sesskey = settings.sesskey;
                         this.url = settings.updatepage;
@@ -1180,7 +1180,7 @@ function uploadpdf_init(Y) {
                                 comment_id: comment.retrieve('id'),
                                 comment_colour: comment.retrieve('colour'),
                                 id: this.id,
-                                userid: this.userid,
+                                submissionid: this.submissionid,
                                 pageno: this.pageno,
                                 sesskey: this.sesskey
                             }
@@ -1212,7 +1212,7 @@ function uploadpdf_init(Y) {
                                 action: 'delete',
                                 commentid: cid,
                                 id: this.id,
-                                userid: this.userid,
+                                submissionid: this.submissionid,
                                 pageno: this.pageno,
                                 sesskey: this.sesskey
                             }
@@ -1290,7 +1290,7 @@ function uploadpdf_init(Y) {
                         request.send({ data: {
                             action: 'getcomments',
                             id: this.id,
-                            userid: this.userid,
+                            submissionid: this.submissionid,
                             pageno: this.pageno,
                             sesskey: this.sesskey
                         } });
@@ -1322,7 +1322,7 @@ function uploadpdf_init(Y) {
                         request.send({ data: {
                             action: 'getquicklist',
                             id: this.id,
-                            userid: this.userid, // This and pageno are not strictly needed, but are checked for on the server
+                            submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
                             pageno: this.pageno,
                             sesskey: this.sesskey
                         } });
@@ -1357,7 +1357,7 @@ function uploadpdf_init(Y) {
                             text: element.retrieve('rawtext'),
                             width: element.getStyle('width').toInt(),
                             id: this.id,
-                            userid: this.userid, // This and pageno are not strictly needed, but are checked for on the server
+                            submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
                             pageno: this.pageno,
                             sesskey: this.sesskey
                         } });
@@ -1389,7 +1389,7 @@ function uploadpdf_init(Y) {
                             action: 'removefromquicklist',
                             itemid: itemid,
                             id: this.id,
-                            userid: this.userid, // This and pageno are not strictly needed, but are checked for on the server
+                            submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
                             pageno: this.pageno,
                             sesskey: this.sesskey
                         } });
@@ -1471,7 +1471,7 @@ function uploadpdf_init(Y) {
                         request.send({ data: {
                             action: 'getimageurl',
                             id: this.id,
-                            userid: this.userid,
+                            submissionid: this.submissionid,
                             pageno: pageno,
                             sesskey: this.sesskey
                         } });
@@ -1523,7 +1523,7 @@ function uploadpdf_init(Y) {
                             annotation_type: details.type,
                             annotation_id: details.id,
                             id: this.id,
-                            userid: this.userid,
+                            submissionid: this.submissionid,
                             pageno: this.pageno,
                             sesskey: this.sesskey
                         };
@@ -1566,7 +1566,7 @@ function uploadpdf_init(Y) {
                                 action: 'removeannotation',
                                 annotationid: aid,
                                 id: this.id,
-                                userid: this.userid,
+                                submissionid: this.submissionid,
                                 pageno: this.pageno,
                                 sesskey: this.sesskey
                             }
@@ -1789,7 +1789,7 @@ function uploadpdf_init(Y) {
                             showPreviousMenu.on("selectedMenuItemChange", function (e) {
                                 var compareid, url;
                                 compareid = e.newValue.value;
-                                url = 'editcomment.php?id=' + server.id + '&userid=' + server.userid + '&pageno=' + server.pageno;
+                                url = 'editcomment.php?id=' + server.id + '&submissionid=' + server.submissionid + '&pageno=' + server.pageno;
                                 if (compareid > -1) {
                                     url += '&topframe=1&showprevious=' + compareid;
                                 }

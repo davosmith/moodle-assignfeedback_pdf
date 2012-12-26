@@ -30,12 +30,12 @@ require_once($CFG->dirroot.'/mod/assign/locallib.php');
 require_once($CFG->dirroot.'/mod/assign/submission/pdf/lib.php');
 
 $id   = required_param('id', PARAM_INT);
-$userid = optional_param('userid', 0, PARAM_INT);
+$submissionid = optional_param('submissionid', 0, PARAM_INT);
 $pageno = optional_param('pageno', 1, PARAM_INT);
 $action = optional_param('action', null, PARAM_TEXT);
 $rownum = optional_param('rownum', null, PARAM_INT);
 
-$url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('userid'=>$userid, 'pageno'=>$pageno, 'id' => $id));
+$url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('submissionid'=>$submissionid, 'pageno'=>$pageno, 'id' => $id));
 if (!is_null($rownum)) {
     $url->param('rownum', $rownum);
 }
@@ -52,9 +52,9 @@ $assignment = new assign($context, $cm, $course);
 $feedbackpdf = new assign_feedback_pdf($assignment, 'feedback_pdf');
 
 if ($action == 'showprevious') {
-    $feedbackpdf->show_previous_comments($userid);
+    $feedbackpdf->show_previous_comments($submissionid);
 } elseif ($action == 'showpreviouspage') {
-    $feedbackpdf->edit_comment_page($userid, $pageno, false);
+    $feedbackpdf->edit_comment_page($submissionid, $pageno, false);
 } else {
-    $feedbackpdf->edit_comment_page($userid, $pageno);
+    $feedbackpdf->edit_comment_page($submissionid, $pageno);
 }

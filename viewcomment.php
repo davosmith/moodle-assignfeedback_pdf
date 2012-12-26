@@ -30,10 +30,10 @@ require_once($CFG->dirroot.'/mod/assign/locallib.php');
 require_once($CFG->dirroot.'/mod/assign/submission/pdf/lib.php');
 
 $id   = required_param('id', PARAM_INT);
-$userid = optional_param('userid', 0, PARAM_INT);
+$submissionid = optional_param('submissionid', 0, PARAM_INT);
 $pageno = optional_param('pageno', 1, PARAM_INT);
 
-$url = new moodle_url('/mod/assign/feedback/pdf/viewcomment.php', array('userid'=>$userid, 'pageno'=>$pageno, 'id' => $id));
+$url = new moodle_url('/mod/assign/feedback/pdf/viewcomment.php', array('submissionid'=>$submissionid, 'pageno'=>$pageno, 'id' => $id));
 $cm = get_coursemodule_from_id('assign', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
@@ -42,14 +42,20 @@ require_login($course, false, $cm);
 
 $context = context_module::instance($cm->id);
 
-if ($userid && $userid != $USER->id) {
-    require_capability('mod/assign:grade', $context);
-} else {
-    require_capability('mod/assign:submit', $context);
-    $userid = $USER->id;
-}
-
 $assignment = new assign($context, $cm, $course);
 $feedbackpdf = new assign_feedback_pdf($assignment, 'feedback_pdf');
 
-$feedbackpdf->edit_comment_page($userid, $pageno, false);
+// Check the user has the relevant capability to access this assignment submission
+$submissionuserid = null;
+if ($submissionid) {
+    $submissionuserid = $DB->get_field('assign_submission', 'userid', array('id' => $submissionid), MUST_EXIST);
+}
+if ($submissionid && $submissionuserid != $USER->id) {
+    require_capability('mod/assign:grade', $context);
+} else {
+    require_capability('mod/assign:submit', $context);
+    $submissionid = $DB->get_field('assign_submission', 'id', array('assignment' => $assignment->get_instance()->id,
+                                                                   'userid' => $USER->id), MUST_EXIST);
+}
+
+$feedbackpdf->edit_comment_page($submissionid, $pageno, false);

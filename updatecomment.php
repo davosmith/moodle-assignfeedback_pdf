@@ -31,10 +31,10 @@ require_once($CFG->dirroot.'/mod/assign/locallib.php');
 require_once($CFG->dirroot.'/mod/assign/submission/pdf/lib.php');
 
 $id   = required_param('id', PARAM_INT);
-$userid = required_param('userid', PARAM_INT);
+$submissionid = required_param('submissionid', PARAM_INT);
 $pageno = required_param('pageno', PARAM_INT);
 
-$url = new moodle_url('/mod/assign/feedback/pdf/updatecomment.php', array('id' => $id, 'userid'=>$userid, 'pageno'=>$pageno));
+$url = new moodle_url('/mod/assign/feedback/pdf/updatecomment.php', array('id' => $id, 'submissionid'=>$submissionid, 'pageno'=>$pageno));
 $cm = get_coursemodule_from_id('assign', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
@@ -46,4 +46,4 @@ $context = context_module::instance($cm->id);
 $assignment = new assign($context, $cm, $course);
 $submissionpdf = new assign_feedback_pdf($assignment, 'feedback_pdf');
 
-$submissionpdf->update_comment_page($userid, $pageno);
+$submissionpdf->update_comment_page($submissionid, $pageno);

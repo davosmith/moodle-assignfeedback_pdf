@@ -178,7 +178,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             }
             // Add 'annotate submission' link.
             $cm = $this->assignment->get_course_module();
-            $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'userid' => $userid));
+            $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'submissionid' => $submission->id));
             $rownum = $this->get_rownum();
             if ($rownum !== false) {
                 $url->param('rownum', $rownum); // Nasty hack to get back to where we started from.
@@ -206,7 +206,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                                                            true);
             $cm = $this->assignment->get_course_module();
             $viewurl = new moodle_url('/mod/assign/feedback/pdf/viewcomment.php', array('id' => $cm->id,
-                                                                                   'userid' => $userid));
+                                                                                   'submissionid' => $submission->id));
             $ret = $OUTPUT->pix_icon('t/download', '').' ';
             $ret .= html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
             $ret .= html_writer::empty_tag('br');
@@ -336,14 +336,14 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         */
     }
 
-    public function edit_comment_page($userid, $pageno, $enableedit = true) {
+    public function edit_comment_page($submissionid, $pageno, $enableedit = true) {
         global $CFG, $DB, $OUTPUT, $PAGE, $USER;
 
         // Check user and submission both exist.
         $assignment = $this->assignment->get_instance();
-        $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
-        $params = array('assignment' => $assignment->id, 'userid' => $userid);
+        $params = array('id' => $submissionid, 'assignment' => $assignment->id);
         $submission = $DB->get_record('assign_submission', $params, '*', MUST_EXIST);
+        $user = $DB->get_record('user', array('id' => $submission->userid), '*', MUST_EXIST);
         $params = array('assignment' => $assignment->id, 'submission' => $submission->id);
         $submissionpdf = $DB->get_record('assignsubmission_pdf', $params, '*', MUST_EXIST);
         $submission->numpages = $submissionpdf->numpages;
@@ -351,7 +351,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         // Check capabilities.
         $context = $this->assignment->get_context();
-        if ($USER->id == $userid) {
+        if ($USER->id == $user->id) {
             if (!has_capability('mod/assign:grade', $context)) {
                 require_capability('mod/assign:submit', $context);
                 $enableedit = false;
@@ -368,14 +368,16 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 echo '<html><head><title>'.get_string('feedback', 'assign').':'.fullname($user, true).':'.format_string($assignment->name).'</title></head>';
                 echo html_writer::start_tag('frameset', array('cols' => "70%, 30%"));
                 $mainframeurl = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id,
-                                                                                  'userid' => $userid,
+                                                                                  'submissionid' => $submission->id,
                                                                                   'pageno' => $pageno,
                                                                                   'showprevious' => $showprevious,
                                                                                            ));
                 $previouscm = get_coursemodule_from_instance('assign', $showprevious, $this->assignment->get_course()->id,
                                                              false, MUST_EXIST);
+                $previoussubmission = $DB->get_field('assign_submission', 'id', array('assignment' => $showprevious,
+                                                                                'userid' => $user->id), MUST_EXIST);
                 $sideframeurl = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $previouscm->id,
-                                                                                       'userid' => $userid,
+                                                                                       'submissionid' => $previoussubmission,
                                                                                        'action' => 'showprevious'));
                 echo html_writer::empty_tag('frame', array('src' => $mainframeurl));
                 echo html_writer::empty_tag('frame', array('src' => $sideframeurl));
@@ -449,7 +451,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         echo '<br/>';
         echo $pageselector;
         if ($enableedit) {
-            echo '<p><a id="opennewwindow" target="_blank" href="editcomment.php?id='.$cm->id.'&amp;userid='.$userid.'&amp;pageno='. $pageno .'&amp;showprevious='.$showprevious.'">'.get_string('opennewwindow','assignfeedback_pdf').'</a></p>';
+            echo '<p><a id="opennewwindow" target="_blank" href="editcomment.php?id='.$cm->id.'&amp;submissionid='.$submission->id.'&amp;pageno='. $pageno .'&amp;showprevious='.$showprevious.'">'.get_string('opennewwindow','assignfeedback_pdf').'</a></p>';
         }
         echo '<br style="clear:both;" />';
 
@@ -472,7 +474,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         $server = array(
             'id' => $cm->id,
-            'userid' => $userid,
+            'submissionid' => $submission->id,
             'pageno' => $pageno,
             'sesskey' => sesskey(),
             'updatepage' => $CFG->wwwroot.'/mod/assign/feedback/pdf/updatecomment.php',
@@ -600,7 +602,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             // If opening in same window - show 'back to comment list' link
             if (array_key_exists('uploadpdf_commentnewwindow', $_COOKIE) && !$_COOKIE['uploadpdf_commentnewwindow']) {
                 $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $this->assignment->get_course_module()->id,
-                                                                                  'userid' => $user->id,
+                                                                                  'submissionid' => $submission->id,
                                                                                   'action' => 'showprevious'));
                 echo html_writer::link($url, get_string('backtocommentlist','assignfeedback_pdf'));
             }
@@ -834,18 +836,16 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return array(null, 0, 0, $pagecount);
     }
 
-    public function show_previous_comments($userid) {
+    public function show_previous_comments($submissionid) {
         global $DB, $PAGE, $OUTPUT;
-
-        // TODO davo - get this to display the details of the *previous* assignment!!!
 
         $context = $this->assignment->get_context();
         require_capability('mod/assignment:grade', $context);
 
         $assignment = $this->assignment->get_instance();
-        $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
-        $params = array('assignment' => $assignment->id, 'userid' => $userid);
+        $params = array('id' => $submissionid, 'assignment' => $assignment->id);
         $submission = $DB->get_record('assign_submission', $params, '*', MUST_EXIST);
+        $user = $DB->get_record('user', array('id' => $submission->userid), '*', MUST_EXIST);
         $params = array('assignment' => $assignment->id, 'submission' => $submission->id);
         $submissionpdf = $DB->get_record('assignsubmission_pdf', $params, '*', MUST_EXIST);
         $submission->numpages = $submissionpdf->numpages;
@@ -893,12 +893,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             echo '<p>'.get_string('nocomments','assignment_uploadpdf').'</p>';
 
             /* This does not work well when the student has not submitted anything
-            $linkurl = '/mod/assignment/type/uploadpdf/editcomment.php?a='.$this->assignment->id.'&amp;userid='.$user->id.'&amp;pageno=1&amp;action=showpreviouspage';
+            $linkurl = '/mod/assignment/type/uploadpdf/editcomment.php?a='.$this->assignment->id.'&amp;submissionid='.$submission->id.'&amp;pageno=1&amp;action=showpreviouspage';
 
             $title = fullname($user, true).':'.format_string($this->assignment->name);
             $onclick = "var el = document.getElementById('opennewwindow'); if (el && !el.checked) { return true; } ";
-            $onclick .= "this.target='showpage{$userid}'; ";
-            $onclick .= "return openpopup('{$linkurl}', 'showpage{$userid}', ";
+            $onclick .= "this.target='showpage{$submission->id}'; ";
+            $onclick .= "return openpopup('{$linkurl}', 'showpage{$submission->id}', ";
             $onclick .= "'menubar=0,location=0,scrollbars,resizable,width=700,height=700', 0)";
 
             $link = '<a title="'.$title.'" href="'.$CFG->wwwroot.$linkurl.'" onclick="'.$onclick.'">'.get_string('openfirstpage','assignment_uploadpdf').'</a>';
@@ -913,15 +913,15 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             //$othercm = get_coursemodule_from_instance('mod_assign', )
             foreach ($comments as $comment) {
                 $linkurl = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id,
-                                                                                           'userid' => $user->id,
+                                                                                           'submissionid' => $submission->id,
                                                                                            'pageno' => $comment->pageno,
                                                                                            'commentid' => $comment->id,
                                                                                            'action' => 'showpreviouspage'));
 
                 $title = fullname($user, true).':'.format_string($assignment->name).':'.$comment->pageno;
                 $onclick = "var el = document.getElementById('opennewwindow'); if (el && !el.checked) { return true; } ";
-                $onclick .= "this.target='showpage{$userid}'; ";
-                $onclick .= "return openpopup('".$linkurl->out(false)."', 'showpage{$userid}', ";
+                $onclick .= "this.target='showpage{$submission->id}'; ";
+                $onclick .= "return openpopup('".$linkurl->out(false)."', 'showpage{$submission->id}', ";
                 $onclick .= "'menubar=0,location=0,scrollbars,resizable,width=700,height=700', 0)";
 
                 $link = '<a title="'.$title.'" href="'.$linkurl->out().'" onclick="'.$onclick.'">'.$comment->pageno.'</a>';
@@ -1029,7 +1029,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return true;
     }
 
-    public function update_comment_page($userid, $pageno) {
+    public function update_comment_page($submissionid, $pageno) {
         global $USER, $DB;
 
         $resp = array('error'=> ASSIGNFEEDBACK_PDF_ERR_NONE);
@@ -1037,10 +1037,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         require_sesskey();
 
         // Retrieve all database records.
-        $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
         $assignment = $this->assignment->get_instance();
-        $params = array('assignment' => $assignment->id, 'userid' => $user->id);
+        $params = array('id' => $submissionid, 'assignment' => $assignment->id);
         $submission = $DB->get_record('assign_submission', $params, '*', MUST_EXIST);
+        $user = $DB->get_record('user', array('id' => $submission->userid), '*', MUST_EXIST);
         $params = array('assignment' => $assignment->id, 'submission' => $submission->id);
         $submissionpdf = $DB->get_record('assignsubmission_pdf', $params, '*', MUST_EXIST);
         $submission->numpages = $submissionpdf->numpages;
