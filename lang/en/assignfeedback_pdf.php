@@ -37,6 +37,7 @@ $string['colourblue'] = 'Blue';
 $string['colourwhite'] = 'White';
 $string['colourclear'] = 'Clear';
 $string['colourblack'] = 'Black';
+$string['comment'] = 'Comment';
 $string['commentcolour'] = '[,] - comment background colour';
 $string['commenticon'] = "c - add comments\nHold Ctrl to draw a line";
 $string['deletecomment'] = 'Delete comment';

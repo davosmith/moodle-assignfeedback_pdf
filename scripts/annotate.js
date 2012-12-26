@@ -1658,7 +1658,7 @@ function uploadpdf_init(Y) {
                         } else if (e.key === 'e') {
                             setcurrenttool('erase');
                             /*} else if (e.key === 'g' && modifier) {
-                             // TODO - get this working (at some point)
+                             // get this working (at some point)
                              var btn = document.id('generateresponse');
                              var frm = btn.parentNode;
                              frm.submit();*/
@@ -1679,6 +1679,7 @@ function uploadpdf_init(Y) {
                 }
 
                 function doscrolltocomment(commentid) {
+                    commentid = parseInt(commentid, 10);
                     if (commentid === 0) {
                         return;
                     }
