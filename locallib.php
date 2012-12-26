@@ -224,13 +224,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      */
     public function delete_instance() {
 
-        // TODO davo - clean up all annotations and files
+        // Nothing to delete - the submission plugin handles any deletion needed.
 
-/*
-        global $DB;
-        // will throw exception on failure
-        $DB->delete_records('assignfeedback_file', array('assignment'=>$this->assignment->get_instance()->id));
-*/
         return true;
     }
 
