@@ -266,15 +266,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return bool True if upgrade is possible
      */
     public function can_upgrade($type, $version) {
-
-        // TODO davo - allow this to upgrade an old uploadpdf plugin
-
-        /*
-        if (($type == 'upload' || $type == 'uploadsingle') && $version >= 2011112900) {
-            return true;
-        }
+        // Submission plugin handles the upgrade
         return false;
-        */
     }
 
     /**
@@ -301,34 +294,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return bool true or false - false will trigger a rollback
      */
     public function upgrade(context $oldcontext, stdClass $oldassignment, stdClass $oldsubmission, stdClass $grade, & $log) {
-
-        // TODO davo - upgrade annotated uploadpdf assignments
-
-        /*
-        global $DB;
-
-        // now copy the area files
-        $this->assignment->copy_area_files_for_upgrade($oldcontext->id,
-                                                        'mod_assignment',
-                                                        'response',
-                                                        $oldsubmission->id,
-                                                        // New file area
-                                                        $this->assignment->get_context()->id,
-                                                        'assignfeedback_file',
-                                                        ASSIGNFEEDBACK_FILE_FILEAREA,
-                                                        $grade->id);
-
-        // now count them!
-        $filefeedback = new stdClass();
-        $filefeedback->numfiles = $this->count_files($grade->id, ASSIGNFEEDBACK_FILE_FILEAREA);
-        $filefeedback->grade = $grade->id;
-        $filefeedback->assignment = $this->assignment->get_instance()->id;
-        if (!$DB->insert_record('assignfeedback_file', $filefeedback) > 0) {
-            $log .= get_string('couldnotconvertgrade', 'mod_assign', $grade->userid);
-            return false;
-        }
+        // Submission plugin handles the upgrade
         return true;
-        */
     }
 
     public function edit_comment_page($submissionid, $pageno, $enableedit = true) {
