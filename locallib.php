@@ -447,8 +447,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             'lang_emptyquicklist_instructions' => get_string('emptyquicklist_instructions', 'assignfeedback_pdf'),
             'deleteicon' => $OUTPUT->pix_url('/t/delete'),
             'pagecount' => $pagecount,
-            'blank_image' => $CFG->wwwroot.'/mod/assignment/type/uploadpdf/style/blank.gif',
-            'image_path' => $CFG->wwwroot.'/mod/assignment/type/uploadpdf/pix/',
+            'blank_image' => $CFG->wwwroot.'/mod/assign/feedback/pdf/pix/blank.gif',
+            'image_path' => $CFG->wwwroot.'/mod/assign/feedback/pdf/pix/',
             'css_path' => $CFG->wwwroot.'/lib/yui/'.$CFG->yui2version.'/build/assets/skins/sam/',
             'editing' => ($enableedit ? 1 : 0),
             'lang_nocomments' => get_string('findcommentsempty', 'assignfeedback_pdf')
@@ -465,7 +465,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
                           'requires' => array('yui2-yahoo-dom-event', 'yui2-container', 'yui2-element',
                                               'yui2-button', 'yui2-menu', 'yui2-utilities'));
-        $PAGE->requires->js_init_call('uploadpdf_init', null, true, $jsmodule);
+        $PAGE->requires->js_init_call('uploadpdf_init', array(), true, $jsmodule);
 
         echo $OUTPUT->footer();
     }
@@ -841,7 +841,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $pdfurl = moodle_url::make_pluginfile_url($file->get_contextid(), $file->get_component(),
                                                       $file->get_filearea(), $file->get_itemid(), $file->get_filepath(),
                                                       $file->get_filename(), true);
-            echo html_writer::link($pdfurl, get_string('downloadoriginal', 'assignment_uploadpdf'));
+            echo html_writer::link($pdfurl, get_string('downloadoriginal', 'assignsbmission_pdf'));
         }
 
         // 'Open in new window' check box
@@ -853,15 +853,15 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
         $onclick = "var checked = this.checked ? 1 : 0; document.cookie='uploadpdf_commentnewwindow='+checked; return true;";
         echo '<br/><input type="checkbox" name="opennewwindow" id="opennewwindow" '.$checked.' onclick="'.$onclick.'" />';
-        echo '<label for="opennewwindow">'.get_string('openlinknewwindow','assignment_uploadpdf').'</label><br/>';
+        echo '<label for="opennewwindow">'.get_string('openlinknewwindow','assignfeedback_pdf').'</label><br/>';
 
         // Put all the comments in a table
         $comments = $DB->get_records('assignfeedback_pdf_cmnt', array('submissionid' => $submission->id), 'pageno, posy');
         if (!$comments) {
-            echo '<p>'.get_string('nocomments','assignment_uploadpdf').'</p>';
+            echo '<p>'.get_string('nocomments','assignfeedback_pdf').'</p>';
 
             /* This does not work well when the student has not submitted anything
-            $linkurl = '/mod/assignment/type/uploadpdf/editcomment.php?a='.$this->assignment->id.'&amp;submissionid='.$submission->id.'&amp;pageno=1&amp;action=showpreviouspage';
+            $linkurl = '/mod/assign/feedback/pdf/editcomment.php?a='.$this->assignment->id.'&amp;submissionid='.$submission->id.'&amp;pageno=1&amp;action=showpreviouspage';
 
             $title = fullname($user, true).':'.format_string($this->assignment->name);
             $onclick = "var el = document.getElementById('opennewwindow'); if (el && !el.checked) { return true; } ";
@@ -869,14 +869,14 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $onclick .= "return openpopup('{$linkurl}', 'showpage{$submission->id}', ";
             $onclick .= "'menubar=0,location=0,scrollbars,resizable,width=700,height=700', 0)";
 
-            $link = '<a title="'.$title.'" href="'.$CFG->wwwroot.$linkurl.'" onclick="'.$onclick.'">'.get_string('openfirstpage','assignment_uploadpdf').'</a>';
+            $link = '<a title="'.$title.'" href="'.$CFG->wwwroot.$linkurl.'" onclick="'.$onclick.'">'.get_string('openfirstpage','assignfeedback_pdf').'</a>';
 
             echo '<p>'.$link.'</p>';
             */
         } else {
             $style1 = ' style="border: black 1px solid;"';
             $style2 = ' style="border: black 1px solid; text-align: center;" ';
-            echo '<table'.$style1.'><tr><th'.$style1.'>'.get_string('pagenumber','assignment_uploadpdf').'</th>';
+            echo '<table'.$style1.'><tr><th'.$style1.'>'.get_string('pagenumber','assignfeedback_pdf').'</th>';
             echo '<th'.$style1.'>'.get_string('comment','assignfeedback_pdf').'</th></tr>';
             //$othercm = get_coursemodule_from_instance('mod_assign', )
             foreach ($comments as $comment) {
