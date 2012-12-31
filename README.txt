@@ -1,6 +1,6 @@
-This will be part of the successor to the Moodle 1.9-2.2 'UploadPDF' assignment type (along with assignsubmission_pdf).
+This is part of the PDF submission plugin for Moodle assignments.
 
-At the moment, it is not. It is now an installable plugin, that does nothing useful (yet).
+Full instructions and information can be found in the submission part of this assignment at:
+https://github.com/davosmith/moodle-assignsubmission_pdf
 
-Check back again soon(ish) for exciting developments, but for now ... you'll just have to wait.
 
