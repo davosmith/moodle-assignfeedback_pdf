@@ -206,14 +206,16 @@ function uploadpdf_init(Y) {
 
                     var value, menu, items, i, details, itempage, itemid;
 
+                    id = parseInt(id, 10);
+                    page = parseInt(page, 10);
                     value = page + ':' + id;
                     menu = findcommentsmenu.getMenu();
                     items = menu.getItems();
                     for (i = 0; i < items.length; i += 1) {
                         if ($defined(items[i].value)) {
                             details = items[i].value.split(':');
-                            itempage = details[0].toInt();
-                            itemid = details[1];
+                            itempage = parseInt(details[0], 10);
+                            itemid = parseInt(details[1], 10);
                             if (itemid === 0) { // 'No comments'
                                 items[i].value = page + ':' + id;
                                 items[i].cfg.setProperty('text', text);
@@ -237,11 +239,12 @@ function uploadpdf_init(Y) {
                         return;
                     }
                     var menu, items, i, itemid;
+                    id = parseInt(id, 10);
                     menu = findcommentsmenu.getMenu();
                     items = menu.getItems();
                     for (i = 0; i < items.length; i += 1) {
-                        if (!$defined(items[i].value)) {
-                            itemid = items[i].value.split(':')[1];
+                        if ($defined(items[i].value)) {
+                            itemid = parseInt(items[i].value.split(':')[1], 10);
                             if (itemid === id) {
                                 if (items.length === 1) {
                                     // Only item in list - set it to 'no comments'
