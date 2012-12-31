@@ -478,6 +478,13 @@ function uploadpdf_init(Y) {
                     newcomment = new Element('div');
                     document.id('pdfholder').adopt(newcomment);
 
+                    if (position.x < 0) {
+                        position.x = 0;
+                    }
+                    if (position.y < 0) {
+                        position.y = 0;
+                    }
+
                     if ($defined(colour)) {
                         setcolourclass(colour, newcomment);
                     } else {
@@ -1949,8 +1956,8 @@ function uploadpdf_init(Y) {
                         var imgpos, pos, cb, style;
                         imgpos = document.id('pdfimg').getPosition();
                         pos = {
-                            x: menu.menu.getStyle('left').toInt() - imgpos.x,
-                            y: menu.menu.getStyle('top').toInt() - imgpos.y + 20
+                            x: menu.menu.getStyle('left').toInt() - imgpos.x - menu.options.offsets.x,
+                            y: menu.menu.getStyle('top').toInt() - imgpos.y - menu.options.offsets.y
                         };
                         // Nasty hack to reposition the comment box in IE
                         if (Browser.ie && Browser.version < 9) {
@@ -1960,6 +1967,9 @@ function uploadpdf_init(Y) {
                             } else {
                                 pos.y -= 15;
                             }
+                        } else {
+                            pos.x += 15;
+                            pos.y += 15;
                         }
                         cb = makecommentbox(pos, quicklist[id].text, quicklist[id].colour);
                         if (Browser.ie && Browser.version < 9) {
@@ -1994,7 +2004,7 @@ function uploadpdf_init(Y) {
                     content = document.id('region-main');
                     if (content) {
                         offs = content.getPosition();
-                        offs.x = -offs.x;
+                        offs.x = 0;
                         offs.y = -offs.y;
                     } else {
                         offs = {x: 0, y: 0};
