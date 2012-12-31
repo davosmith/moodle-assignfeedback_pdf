@@ -464,7 +464,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $jsmodule = array('name' => 'assignfeedback_pdf',
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
                           'requires' => array('yui2-yahoo-dom-event', 'yui2-container', 'yui2-element',
-                                              'yui2-button', 'yui2-menu', 'yui2-utilities'));
+                                              'yui2-button', 'yui2-menu', 'yui2-utilities', 'panel'));
         $PAGE->requires->js_init_call('uploadpdf_init', array(), true, $jsmodule);
 
         echo $OUTPUT->footer();
@@ -568,6 +568,26 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                                                                                   'action' => 'showprevious'));
                 echo html_writer::link($url, get_string('backtocommentlist','assignfeedback_pdf'));
             }
+        }
+
+        if ($enableedit) {
+            $helpicon = $OUTPUT->pix_icon('help', '');
+            $saveopts .= '&nbsp;'.html_writer::link('#', $helpicon.' '.get_string('annotationhelp', 'assignfeedback_pdf'),
+                                                    array('id' => 'annotationhelp'));
+            $images = (object)array(
+                'save' => $OUTPUT->pix_icon('savequit', '', 'assignfeedback_pdf'),
+                'generate' => $OUTPUT->pix_icon('tostudent', '', 'assignfeedback_pdf'),
+                'comment' => $OUTPUT->pix_icon('commenticon', '', 'assignfeedback_pdf'),
+                'line' => $OUTPUT->pix_icon('lineicon', '', 'assignfeedback_pdf'),
+                'rectangle' => $OUTPUT->pix_icon('rectangleicon', '', 'assignfeedback_pdf'),
+                'oval' => $OUTPUT->pix_icon('ovalicon', '', 'assignfeedback_pdf'),
+                'freehand' => $OUTPUT->pix_icon('freehandicon', '', 'assignfeedback_pdf'),
+                'highlight' => $OUTPUT->pix_icon('highlighticon', '', 'assignfeedback_pdf'),
+                'stamp' => $OUTPUT->pix_icon('stampicon', '', 'assignfeedback_pdf'),
+                'erase' => $OUTPUT->pix_icon('eraseicon', '', 'assignfeedback_pdf'),
+            );
+            $saveopts .= html_writer::tag('div', get_string('annotationhelp_text', 'assignfeedback_pdf', $images),
+                                          array('id' => 'annotationhelp_text', 'style' => 'display:none;'));
         }
 
         $out .= html_writer::tag('div', $saveopts, array('id' => 'saveoptions'));

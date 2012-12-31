@@ -1735,7 +1735,7 @@ function uploadpdf_init(Y) {
                 function startjs() {
                     server = new ServerComm(server_config);
 
-                    var showPreviousMenu, colour, linecolour, stamp, tool, pageno, sel, selidx, selpage, btn;
+                    var showPreviousMenu, colour, linecolour, stamp, tool, pageno, sel, selidx, selpage, btn, helppanel;
 
                     if (server.editing) {
                         if (document.getElementById('choosecolour')) {
@@ -1869,6 +1869,29 @@ function uploadpdf_init(Y) {
                             tool = 'comment';
                         }
                         setcurrenttool(tool);
+
+                        //content = Y.one('#annotationhelp_text');
+                        //content = content.getHTML();
+                        helppanel = new Y.Panel({
+                            bodyContent: Y.one('#annotationhelp_text').getHTML(),
+                            headerContent: 'Help',
+                            width: '90%',
+                            zIndex: 300,
+                            centered: false,
+                            render: false,
+                            x: 20,
+                            y: 20,
+                            modal: true
+                        });
+
+                        Y.one('#annotationhelp').on('click', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            helppanel.show();
+                            helppanel.render();
+                            return false;
+                        });
+
                     }
 
                     // Start preloading pages if using js navigation method
