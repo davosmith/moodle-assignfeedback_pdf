@@ -16,7 +16,7 @@ function uploadpdf_init(Y) {
                 nextbutton, prevbutton, choosedrawingtool, findcommentsmenu, stampmenu, resendtimeout, currentpaper, currentline,
                 linestartpos, freehandpoints, allannotations, LINEWIDTH, HIGHLIGHT_LINEWIDTH, $defined, ServerComm;
 
-            if (YAHOO === undefined) {
+            if (typeof YAHOO === 'undefined') {
                 YH = Y.YUI2;
             } else {
                 YH = YAHOO;
