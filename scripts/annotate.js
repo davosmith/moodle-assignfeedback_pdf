@@ -12,10 +12,16 @@ function uploadpdf_init(Y) {
             'scripts/raphael-min.js'],
             function () {
 
-                var YAHOO = Y.YUI2, currentcomment, editbox, resizing, server, context_quicklist, context_comment, quicklist,
+                var YH, currentcomment, editbox, resizing, server, context_quicklist, context_comment, quicklist,
                     pagelist, waitingforpage, pagestopreload, pagesremaining, pageunloading, lasthighlight, colourmenu, linecolourmenu,
                     nextbutton, prevbutton, choosedrawingtool, findcommentsmenu, stampmenu, resendtimeout, currentpaper, currentline,
                     linestartpos, freehandpoints, allannotations, LINEWIDTH, HIGHLIGHT_LINEWIDTH, $defined, ServerComm;
+
+                if (YAHOO === undefined) {
+                    YH = Y.YUI2;
+                } else {
+                    YH = YAHOO;
+                }
 
                 currentcomment = null; // The comment that is currently being edited
                 editbox = null; // The edit box that is currently displayed
@@ -1746,7 +1752,7 @@ function uploadpdf_init(Y) {
 
                     if (server.editing) {
                         if (document.getElementById('choosecolour')) {
-                            colourmenu = new YAHOO.widget.Button("choosecolour", {
+                            colourmenu = new YH.widget.Button("choosecolour", {
                                 type: "menu",
                                 menu: "choosecolourmenu",
                                 lazyloadmenu: false
@@ -1761,7 +1767,7 @@ function uploadpdf_init(Y) {
                             });
                         }
                         if (document.getElementById('chooselinecolour')) {
-                            linecolourmenu = new YAHOO.widget.Button("chooselinecolour", {
+                            linecolourmenu = new YH.widget.Button("chooselinecolour", {
                                 type: "menu",
                                 menu: "chooselinecolourmenu",
                                 lazyloadmenu: false
@@ -1776,7 +1782,7 @@ function uploadpdf_init(Y) {
                             });
                         }
                         if (document.getElementById('choosestamp')) {
-                            stampmenu = new YAHOO.widget.Button("choosestamp", {
+                            stampmenu = new YH.widget.Button("choosestamp", {
                                 type: "menu",
                                 menu: "choosestampmenu",
                                 lazyloadmenu: false
@@ -1791,7 +1797,7 @@ function uploadpdf_init(Y) {
                             });
                         }
                         if (document.getElementById('showpreviousbutton')) {
-                            showPreviousMenu = new YAHOO.widget.Button("showpreviousbutton", {
+                            showPreviousMenu = new YH.widget.Button("showpreviousbutton", {
                                 type: "menu",
                                 menu: "showpreviousselect",
                                 lazyloadmenu: false
@@ -1807,13 +1813,13 @@ function uploadpdf_init(Y) {
                             });
                         }
                         if (document.getElementById('savedraft')) {
-                            btn = new YAHOO.widget.Button("savedraft");
+                            btn = new YH.widget.Button("savedraft");
                         }
                         if (document.getElementById('generateresponse')) {
-                            btn = new YAHOO.widget.Button("generateresponse");
+                            btn = new YH.widget.Button("generateresponse");
                         }
                         if (document.getElementById('choosetoolgroup')) {
-                            choosedrawingtool = new YAHOO.widget.ButtonGroup("choosetoolgroup");
+                            choosedrawingtool = new YH.widget.ButtonGroup("choosetoolgroup");
                             choosedrawingtool.on("checkedButtonChange", function (e) {
                                 var newtool = e.newValue.get("value");
                                 newtool = newtool.substr(0, newtool.length - 4); // Strip off the 'icon' part
@@ -1821,16 +1827,16 @@ function uploadpdf_init(Y) {
                             });
                         }
                     }
-                    btn = new YAHOO.widget.Button("downloadpdf");
-                    prevbutton = new YAHOO.widget.Button("prevpage");
+                    btn = new YH.widget.Button("downloadpdf");
+                    prevbutton = new YH.widget.Button("prevpage");
                     prevbutton.on("click", gotoprevpage);
-                    nextbutton = new YAHOO.widget.Button("nextpage");
+                    nextbutton = new YH.widget.Button("nextpage");
                     nextbutton.on("click", gotonextpage);
                     document.id('selectpage').addEvent('change', selectpage);
                     document.id('selectpage2').addEvent('change', selectpage2);
                     document.id('prevpage2').addEvent('click', gotoprevpage);
                     document.id('nextpage2').addEvent('click', gotonextpage);
-                    findcommentsmenu = new YAHOO.widget.Button("findcommentsbutton", {
+                    findcommentsmenu = new YH.widget.Button("findcommentsbutton", {
                         type: "menu",
                         menu: "findcommentsselect",
                         lazyloadmenu: false
