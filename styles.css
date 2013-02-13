@@ -108,7 +108,7 @@
 }
 
 /* context menu specific */
-.path-mod-assign-feedback-pdf .contextmenu	{ border:1px solid #999; padding:0; background:#eee; width:221px; list-style-type:none; display:none; }
+.path-mod-assign-feedback-pdf .contextmenu	{ border:1px solid #999; padding:0; background:#eee; width:221px; list-style-type:none; display:none; margin:0 }
 .path-mod-assign-feedback-pdf .contextmenu .separatorie7 { border-top:1px solid #999; }
 .path-mod-assign-feedback-pdf .contextmenu .separator { border-bottom:1px solid #999; }
 .path-mod-assign-feedback-pdf .contextmenu li	{ margin:0; padding:0; clear: both; font-size:14px; list-style-type: none; }

@@ -87,7 +87,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $table = new assign_grading_table($this->assignment, 0, $filter, 0, false);
 
         $last = false;
-        $userid = $table->get_cell_data($rownum, 'userid', $last);
+        $useridlist = $table->get_column_data('userid');
+        $userid = $useridlist[$rownum];
 
         return $userid;
     }

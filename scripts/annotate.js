@@ -1972,9 +1972,6 @@ function uploadpdf_init(Y) {
                         } else {
                             pos.y -= 15;
                         }
-                    } else {
-                        pos.x += 15;
-                        pos.y += 15;
                     }
                     cb = makecommentbox(pos, quicklist[id].text, quicklist[id].colour);
                     if (Browser.ie && Browser.version < 9) {
@@ -2005,15 +2002,9 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                var offs, content, menu, items, n;
-                content = document.id('region-main');
-                if (content) {
-                    offs = content.getPosition();
-                    offs.x = 0;
-                    offs.y = -offs.y;
-                } else {
-                    offs = {x: 0, y: 0};
-                }
+                var menu, items, n;
+                document.body.grab(document.id('context-quicklist'));
+                document.body.grab(document.id('context-comment'));
 
                 //create a context menu
                 context_quicklist = new ContextMenu({
@@ -2023,8 +2014,7 @@ function uploadpdf_init(Y) {
                         removeitem: function (itemid) {
                             server.removefromquicklist(itemid);
                         }
-                    },
-                    offsets: offs
+                    }
                 });
                 context_quicklist.addmenu(document.id('pdfimg'));
                 context_quicklist.quickcount = 0;
@@ -2062,8 +2052,7 @@ function uploadpdf_init(Y) {
                             }
                             element.destroy();
                         }
-                    },
-                    offsets: offs
+                    }
                 });
 
                 server.getquicklist();
