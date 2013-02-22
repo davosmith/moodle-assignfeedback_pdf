@@ -86,21 +86,20 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $filter = get_user_preferences('assign_filter', '');
         $table = new assign_grading_table($this->assignment, 0, $filter, 0, false);
 
-        $last = false;
         $useridlist = $table->get_column_data('userid');
         $userid = $useridlist[$rownum];
 
         return $userid;
     }
 
-    protected function get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($userid) {
+    protected function get_submission_from_userid($userid) {
         global $DB;
         $assignmentid = $this->assignment->get_instance()->id;
         return $DB->get_record('assign_submission', array('assignment' => $assignmentid, 'userid' => $userid));
     }
 
     /**
-     * Get form elements for grading form
+     * Get form elements for grading form - retained so that plugin will be compatible with Moodle 2.3
      *
      * @param stdClass $grade
      * @param MoodleQuickForm $mform
@@ -113,16 +112,29 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         } else {
             $userid = $this->get_userid_because_assign_really_does_not_want_to_tell_me();
         }
-        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
-        $annotatelink = $this->annotate_link($userid, $submission);
+        return $this->get_form_elements_for_user($grade, $mform, $data, $userid);
+    }
+
+    /**
+     * Get form elements for grading form
+     *
+     * @param stdClass $grade
+     * @param MoodleQuickForm $mform
+     * @param stdClass $data
+     * @param int $userid
+     * @return bool true if elements were added to the form
+     */
+    public function get_form_elements_for_user($grade, MoodleQuickForm $mform, stdClass $data, $userid) {
+        $submission = $this->get_submission_from_userid($userid);
+        $annotatelink = $this->annotate_link($submission);
         if ($annotatelink) {
             $mform->addElement('static', '', '', $annotatelink);
         }
-        $responselink = $this->response_link($userid, $submission);
+        $responselink = $this->response_link($submission);
         if ($responselink) {
             $mform->addElement('static', '', '', $responselink);
         }
-        return true;
+        return ($annotatelink || $responselink);
     }
 
     /**
@@ -133,8 +145,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view_summary(stdClass $grade, & $showviewlink) {
-        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($grade->userid);
-        return $this->response_link($grade->userid, $submission);
+        $submission = $this->get_submission_from_userid($grade->userid);
+        return $this->response_link($submission);
     }
 
     /**
@@ -143,8 +155,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view(stdClass $grade) {
-        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($grade->userid);
-        return $this->response_link($grade->userid, $submission);
+        $submission = $this->get_submission_from_userid($grade->userid);
+        return $this->response_link($submission);
     }
 
     public function supports_quickgrading() {
@@ -152,10 +164,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     public function get_quickgrading_html($userid, $grade) {
-        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
+        $submission = $this->get_submission_from_userid($userid);
 
-        $annotate = $this->annotate_link($userid, $submission);
-        $resp = $this->response_link($userid, $submission);
+        $annotate = $this->annotate_link($submission);
+        $resp = $this->response_link($submission);
 
         if (!$resp) {
             return $annotate;
@@ -163,7 +175,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $annotate.'<br />'.$resp;
     }
 
-    protected function annotate_link($userid, $submission) {
+    protected function annotate_link($submission) {
         global $DB, $OUTPUT;
         if (!$submission || $submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
             return '';
@@ -192,7 +204,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return '';
     }
 
-    protected function response_link($userid, $submission) {
+    protected function response_link($submission) {
         global $DB, $OUTPUT;
 
         if (!$submission || $submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
@@ -238,7 +250,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     public function is_empty(stdClass $grade) {
         global $DB;
         $userid = $grade->userid;
-        $submission = $this->get_submission_from_userid_because_assign_wants_this_to_be_secret_as_well($userid);
+        $submission = $this->get_submission_from_userid($userid);
         if ($submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
             return true;
         }
