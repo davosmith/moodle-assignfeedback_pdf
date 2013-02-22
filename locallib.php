@@ -67,10 +67,9 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
         $rownum = $params['rownum'];
 
-        // Figure out the offset, based on the $_REQUEST global, as $_GET/$_POST (and hence 'optional_param') are empty
-        if (isset($_REQUEST['nosaveandnext']) || isset($_REQUEST['saveandshownext'])) {
+        if ($returnaction == 'nextgrade') {
             $rownum++;
-        } else if (isset($_REQUEST['nosaveandprevious'])) {
+        } else if ($returnaction == 'previousgrade') {
             $rownum--;
         }
 
@@ -193,10 +192,15 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             // Add 'annotate submission' link.
             $cm = $this->assignment->get_course_module();
             $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'submissionid' => $submission->id));
+            $returnparams = $this->assignment->get_return_params();
+            $returnparams['action'] = $this->assignment->get_return_action();
+            $returnparams = urlencode(http_build_query($returnparams));
+            $url->param('returnparams', $returnparams);
             $rownum = $this->get_rownum();
             if ($rownum !== false) {
-                $url->param('rownum', $rownum); // Nasty hack to get back to where we started from.
+                $url->param('rownum', $rownum);
             }
+
             $ret = $OUTPUT->pix_icon('annotate', '', 'assignfeedback_pdf').' ';
             $ret .= html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
             return $ret;
@@ -414,8 +418,6 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         echo $this->output_controls($submission, $user, $pageno, $enableedit, $showprevious);
 
-        // TODO davo - the rest of this function needs reviewing
-
         // Output the page image
         echo '<div id="pdfsize" style="clear: both; width:'.$imgwidth.'px; height:'.$imgheight.'px; ">';
         echo '<div id="pdfouter" style="position: relative; "> <div id="pdfholder" > ';
@@ -487,10 +489,14 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     protected function back_to_grading() {
         $cm = $this->assignment->get_course_module();
         $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id, 'action' => 'grading'));
-        $rownum = optional_param('rownum', null, PARAM_INT);
-        if (!is_null($rownum)) {
-            $redir->param('rownum', $rownum);
-            $redir->param('action', 'grade');
+        $returnparams = optional_param('returnparams', null, PARAM_TEXT);
+        if (!is_null($returnparams)) {
+            $returnparams = urldecode($returnparams);
+            $returnparams = explode('&amp;', $returnparams);
+            foreach ($returnparams as $returnparam) {
+                list($name, $value) = explode('=', $returnparam, 2);
+                $redir->param($name, $value);
+            }
         }
         redirect($redir);
     }
