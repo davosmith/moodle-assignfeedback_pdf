@@ -57,7 +57,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
     protected function get_rownum() {
         // Find the current row from the assignment 'return_params'
-        if ($this->assignment->get_return_action() != 'grade') {
+        $returnaction = $this->assignment->get_return_action();
+        if (!in_array($returnaction, array('grade', 'nextgrade', 'previousgrade'))) {
             return false;
         }
         $params = $this->assignment->get_return_params();
