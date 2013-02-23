@@ -14,7 +14,7 @@ function uploadpdf_init(Y) {
             var YH, currentcomment, editbox, resizing, server, context_quicklist, context_comment, quicklist,
                 pagelist, waitingforpage, pagestopreload, pagesremaining, pageunloading, lasthighlight, colourmenu, linecolourmenu,
                 nextbutton, prevbutton, choosedrawingtool, findcommentsmenu, stampmenu, resendtimeout, currentpaper, currentline,
-                linestartpos, freehandpoints, allannotations, LINEWIDTH, HIGHLIGHT_LINEWIDTH, $defined, ServerComm;
+                linestartpos, freehandpoints, allannotations, LINEWIDTH, HIGHLIGHT_LINEWIDTH, $defined;
 
             if (typeof YAHOO === 'undefined') {
                 YH = Y.YUI2;
@@ -1108,8 +1108,7 @@ function uploadpdf_init(Y) {
                 allannotations.push(container);
             }
 
-            ServerComm = new Class({
-                Implements: [Events],
+            server = {
                 id: null,
                 submissionid: null,
                 pageno: null,
@@ -1592,7 +1591,7 @@ function uploadpdf_init(Y) {
                     this.scrolltocommentid = commentid;
                 }
 
-            });
+            };
 
             function addcomment(e) {
                 if (!server.editing) {
@@ -1745,7 +1744,7 @@ function uploadpdf_init(Y) {
             }
 
             function startjs() {
-                server = new ServerComm(server_config);
+                server.initialize(server_config);
 
                 var showPreviousMenu, colour, linecolour, stamp, tool, pageno, sel, selidx, selpage, btn, helppanel;
 
@@ -2063,7 +2062,7 @@ function uploadpdf_init(Y) {
                     return; // Moved off the page in question
                 }
                 if (pagelist[pageno].image.complete) {
-                    document.id('pdfimg').setProperty('src', pagelist[pageno].url);
+                    Y.one('#pdfimg').setAttribute('src', pagelist[pageno].url);
                 } else {
                     setTimeout(function () { check_pageimage(pageno); }, 200);
                 }
