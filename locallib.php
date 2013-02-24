@@ -194,7 +194,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'submissionid' => $submission->id));
             $returnparams = $this->assignment->get_return_params();
             $returnparams['action'] = $this->assignment->get_return_action();
-            $returnparams = urlencode(http_build_query($returnparams));
+            $returnparams = http_build_query($returnparams);
             $url->param('returnparams', $returnparams);
             $rownum = $this->get_rownum();
             if ($rownum !== false) {
@@ -491,7 +491,6 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id, 'action' => 'grading'));
         $returnparams = optional_param('returnparams', null, PARAM_TEXT);
         if (!is_null($returnparams)) {
-            $returnparams = urldecode($returnparams);
             $returnparams = explode('&amp;', $returnparams);
             foreach ($returnparams as $returnparam) {
                 list($name, $value) = explode('=', $returnparam, 2);
