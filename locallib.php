@@ -448,7 +448,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
 
         // Definition for 'resend' box
-        echo '<div id="sendfailed" style="display: none;"><p>'.get_string('servercommfailed','assignfeedback_pdf').'</p><button id="sendagain">'.get_string('resend','assignfeedback_pdf').'</button><button onClick="hidesendfailed();">'.get_string('cancel','assignfeedback_pdf').'</button></div>';
+        echo '<div id="sendfailed" style="display: none;"><p>'.get_string('servercommfailed','assignfeedback_pdf').'</p><button id="sendagain">'.get_string('resend','assignfeedback_pdf').'</button><button id="cancelsendagain">'.get_string('cancel','assignfeedback_pdf').'</button></div>';
 
         $server = array(
             'id' => $cm->id,
@@ -479,7 +479,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         $jsmodule = array('name' => 'assignfeedback_pdf',
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
-                          'requires' => array('get', 'yui2-yahoo-dom-event', 'yui2-container', 'yui2-element',
+                          'requires' => array('get', 'button', 'overlay', 'dd-drag', 'resize', 'yui2-yahoo-dom-event', 'yui2-container', 'yui2-element',
                                               'yui2-button', 'yui2-menu', 'yui2-utilities', 'panel'));
         $PAGE->requires->js_init_call('uploadpdf_init', array(), true, $jsmodule);
 

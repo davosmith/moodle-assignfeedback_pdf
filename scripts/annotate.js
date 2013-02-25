@@ -22,20 +22,20 @@ function uploadpdf_init(Y) {
                 YH = YAHOO;
             }
 
-            currentcomment = null; // The comment that is currently being edited
-            editbox = null; // The edit box that is currently displayed
-            resizing = false; // A box is being resized (so disable dragging)
-            server = null; // The object use to send data back to the server
+            currentcomment = null; // The comment that is currently being edited.
+            editbox = null; // The edit box that is currently displayed.
+            server = null; // The object use to send data back to the server.
             context_quicklist = null;
             context_comment = null;
-            quicklist = null; // Stores all the comments in the quicklist
-            pagelist = []; // Stores all the data for the preloaded pages
-            waitingforpage = -1;  // Waiting for this page from the server - display as soon as it is received
-            pagestopreload = 4; // How many pages ahead to load when you hit a non-preloaded page
-            pagesremaining = pagestopreload; // How many more pages to preload before waiting
+            quicklist = null; // Stores all the comments in the quicklist.
+            pagelist = []; // Stores all the data for the preloaded pages.
+            waitingforpage = -1;  // Waiting for this page from the server - display as soon as it is received.
+            pagestopreload = 4; // How many pages ahead to load when you hit a non-preloaded page.
+            pagesremaining = pagestopreload; // How many more pages to preload before waiting.
             pageunloading = false;
-            lasthighlight = null;
+            lasthighlight = null; // The last comment highlighted via 'find comment'.
 
+            // Toolbar buttons / menus.
             colourmenu = null;
             linecolourmenu = null;
             nextbutton = null;
@@ -44,9 +44,9 @@ function uploadpdf_init(Y) {
             findcommentsmenu = null;
             stampmenu = null;
 
-            resendtimeout = 4000;
+            resendtimeout = 4000; // How long to wait before resending a comment.
 
-// All to do with line drawing
+            // All to do with line drawing.
             currentpaper = null;
             currentline = null;
             linestartpos = null;
@@ -60,8 +60,8 @@ function uploadpdf_init(Y) {
             $defined = function (obj) { return (obj !== undefined && obj !== null); };
 
             function hidesendfailed() {
-                document.id('sendagain').removeEvents();
-                document.id('sendfailed').setStyle('display', 'none');
+                Y.Event.purgeElement('#sendagain', false); // Throw away any remaining 'resend' calls.
+                Y.one('#sendfailed').setStyle('display', 'none'); // Hide the popup.
             }
 
             function showsendfailed(resend) {
@@ -77,9 +77,10 @@ function uploadpdf_init(Y) {
                     return;
                 }
 
-                var el = document.id('sendagain');
-                el.addEvent('click', resend);
-                el.addEvent('click', hidesendfailed);
+                Y.one('#sendagain').on('click', resend);
+                Y.one('#sendagain').on('click', hidesendfailed);
+                Y.one('#cancelsendagain').on('click', hidesendfailed);
+
                 document.id('sendfailed').setStyles({display: 'block', position: 'absolute', top: 200, left: 200, 'z-index': 9999, 'background-color': '#d0d0d0', 'border': 'black 1px solid', padding: 10});
             }
 
@@ -266,22 +267,24 @@ function uploadpdf_init(Y) {
 
             function setcolourclass(colour, comment) {
                 if (comment) {
+                    comment.removeClass('commentred').removeClass('commentgreen').removeClass('commentblue').
+                        removeClass('commentwhite').removeClass('commentclear').removeClass('commentyellow');
                     if (colour === 'red') {
-                        comment.set('class', 'comment commentred');
+                        comment.addClass('commentred');
                     } else if (colour === 'green') {
-                        comment.set('class', 'comment commentgreen');
+                        comment.addClass('commentgreen');
                     } else if (colour === 'blue') {
-                        comment.set('class', 'comment commentblue');
+                        comment.addClass('commentblue');
                     } else if (colour === 'white') {
-                        comment.set('class', 'comment commentwhite');
+                        comment.addClass('commentwhite');
                     } else if (colour === 'clear') {
-                        comment.set('class', 'comment commentclear');
+                        comment.addClass('commentclear');
                     } else {
                         // Default: yellow comment box
-                        comment.set('class', 'comment commentyellow');
+                        comment.addClass('commentyellow');
                         colour = 'yellow';
                     }
-                    comment.store('colour', colour);
+                    comment.setData('colour', colour);
                 }
             }
 
@@ -298,7 +301,7 @@ function uploadpdf_init(Y) {
                 }
                 if (currentcomment) {
                     var col = getcurrentcolour();
-                    if (col !== currentcomment.retrieve('colour')) {
+                    if (col !== currentcomment.getData('colour')) {
                         setcolourclass(getcurrentcolour(), currentcomment);
                     }
                 }
@@ -371,19 +374,17 @@ function uploadpdf_init(Y) {
             }
 
             function setcommentcontent(el, content) {
-                var resizehandle;
-                el.store('rawtext', content);
+                el.setData('rawtext', content);
 
                 // Replace special characters with html entities
                 content = content.replace(/</gi, '&lt;');
                 content = content.replace(/>/gi, '&gt;');
-                if (Browser.ie7) { // Grrr... no 'pre-wrap'
+                if (Y.UA.ie == 7) { // Grrr... no 'pre-wrap'
                     content = content.replace(/\n/gi, '<br/>');
                     content = content.replace(/ {2}/gi, ' &nbsp;');
                 }
-                resizehandle = el.retrieve('resizehandle');
-                el.set('html', content);
-                el.adopt(resizehandle);
+                var contentel = el.one('.content');
+                contentel.setContent(content);
             }
 
             function typingcomment(e) {
@@ -408,26 +409,22 @@ function uploadpdf_init(Y) {
                 content = null;
                 if (editbox !== null) {
                     content = editbox.get('value');
-                    editbox.destroy();
+                    editbox.remove(true);
                     editbox = null;
                 }
                 if (currentcomment !== null) {
                     if (content === null || (content.trim() === '')) {
-                        id = currentcomment.retrieve('id');
+                        id = currentcomment.getData('id');
                         if (id !== -1) {
                             server.removecomment(id);
                         }
-                        currentcomment.destroy();
+                        currentcomment.remove(true);
 
                     } else {
-                        oldcolour = currentcomment.retrieve('oldcolour');
-                        newcolour = currentcomment.retrieve('colour');
-                        if ((content === currentcomment.retrieve('rawtext')) && (newcolour === oldcolour)) {
-                            setcommentcontent(currentcomment, content);
-                            currentcomment.retrieve('drag').attach();
-                            // Do not update the server when the text is unchanged
-                        } else {
-                            setcommentcontent(currentcomment, content);
+                        oldcolour = currentcomment.getData('oldcolour');
+                        newcolour = currentcomment.getData('colour');
+                        setcommentcontent(currentcomment, content);
+                        if ((content !== currentcomment.getData('rawtext')) || (newcolour !== oldcolour)) {
                             server.updatecomment(currentcomment);
                         }
                     }
@@ -447,41 +444,38 @@ function uploadpdf_init(Y) {
                     content = '';
                 }
 
-                editbox = new Element('textarea');
+                editbox = Y.Node.create('<textarea></textarea>');
                 editbox.set('rows', '5');
                 editbox.set('wrap', 'soft');
                 editbox.set('value', content);
-                comment.adopt(editbox);
+                comment.appendChild(editbox);
                 editbox.focus();
 
                 document.addEvent('keydown', typingcomment);
-                comment.retrieve('drag').detach(); // No dragging whilst editing (it messes up the text selection)
             }
 
-            function editcomment(el) {
+            function editcomment(e) {
                 if (!server.editing) {
                     return;
                 }
-                if (currentcomment === el) {
+                if (currentcomment === e.currentTarget) {
                     return;
                 }
                 updatelastcomment();
 
-                currentcomment = el;
-                var resizehandle, content;
-                resizehandle = currentcomment.retrieve('resizehandle');
-                currentcomment.set('html', '');
-                currentcomment.adopt(resizehandle);
-                content = currentcomment.retrieve('rawtext');
+                currentcomment = e.currentTarget;
+                var content;
+                currentcomment.one('.content').setContent('');
+                content = currentcomment.getData('rawtext');
                 makeeditbox(currentcomment, content);
-                setcurrentcolour(currentcomment.retrieve('colour'));
+                setcurrentcolour(currentcomment.getData('colour'));
             }
 
             function makecommentbox(position, content, colour) {
                 // Create the comment box
-                var newcomment, drag, resizehandle, resize;
-                newcomment = new Element('div');
-                document.id('pdfholder').adopt(newcomment);
+                var newcomment, drag, resize, mootoolsel;
+                newcomment = new Y.Node.create('<div><div class="content"></div></div>');
+                Y.one('#pdfholder').appendChild(newcomment);
 
                 if (position.x < 0) {
                     position.x = 0;
@@ -490,70 +484,53 @@ function uploadpdf_init(Y) {
                     position.y = 0;
                 }
 
-                if ($defined(colour)) {
+                newcomment.addClass('comment');
+                if (colour !== undefined) {
                     setcolourclass(colour, newcomment);
                 } else {
                     setcolourclass(getcurrentcolour(), newcomment);
                 }
-                newcomment.store('oldcolour', colour);
-                //newcomment.set('class', 'comment');
-                if (Browser.ie && Browser.version < 9) {
-                    // Does not work with FF & Moodle
-                    newcomment.setStyles({ left: position.x, top: position.y });
-                } else {
-                    // Does not work with IE
-                    newcomment.set('style', 'position:absolute; top:' + position.y + 'px; left:' + position.x + 'px;');
-                }
-                newcomment.store('id', -1);
+                newcomment.setData('oldcolour', colour);
+                newcomment.setStyles({ left: position.x + 'px', top: position.y + 'px', position: 'absolute'});
+                newcomment.setData('id', -1);
 
                 if (server.editing) {
                     if (context_comment) {
-                        context_comment.addmenu(newcomment);
+                        // TODO fix the context menu
+                        //context_comment.addmenu(newcomment);
                     }
 
-                    drag = newcomment.makeDraggable({
-                        container: 'pdfholder',
-                        onCancel: editcomment, // Click without drag = edit
-                        onStart: function (el) {
-                            if (resizing) {
-                                el.retrieve('drag').stop();
-                            } else if (el.retrieve('id') === -1) {
-                                el.retrieve('drag').stop();
-                            }
-                        },
-                        onComplete: function (el) { server.updatecomment(el); }
+                    newcomment.on('click', editcomment);
+                    drag = new Y.DD.Drag({
+                        node: newcomment
                     });
-                    newcomment.store('drag', drag); // Remember the drag object so  we can switch it on later
-
-                    resizehandle = new Element('div');
-                    resizehandle.set('class', 'resizehandle');
-                    newcomment.adopt(resizehandle);
-                    resize = newcomment.makeResizable({
-                        container: 'pdfholder',
-                        handle: resizehandle,
-                        modifiers: {'x': 'width', 'y': null},
-                        onBeforeStart: function () { resizing = true; },
-                        onStart: function (el) {
-                            // Do not allow resizes on comments that have not yet
-                            // got an id from the server (except when still editing
-                            // the text, as that is OK)
-                            if (!$defined(editbox)) {
-                                if (el.retrieve('id') === -1) {
-                                    el.retrieve('resize').stop();
-                                }
-                            }
-                        },
-                        onComplete: function (el) {
-                            resizing = false;
-                            if (!$defined(editbox)) {
-                                server.updatecomment(el); // Do not update on resize when editing the text
-                            }
+                    drag.plug(Y.Plugin.DDConstrained, {
+                        constrain: '#pdfholder' // TODO davo - work out why this isn't working
+                    });
+                    drag.on('drag:end', function (e) {
+                        if (!editbox) { // No updates whilst editing the text.
+                            server.updatecomment(newcomment);
                         }
                     });
-                    newcomment.store('resize', resize);
-                    newcomment.store('resizehandle', resizehandle);
 
                     // Add the edit box to it
+                    resize = new Y.Resize({
+                        node: newcomment,
+                        handles: 'r'
+                    });
+                    resize.plug(Y.Plugin.ResizeConstrained, {
+                        constrain: '#pdfholder'
+                    });
+                    resize.after('resize:resize', function (e) {
+                        newcomment.setStyle('height', '');
+                    });
+                    resize.after('resize:end', function (e) {
+                        newcomment.setStyle('height', '');
+                        if (!$defined(editbox)) {
+                            // Do not update the server when resizing whilst editing text.
+                            server.updatecomment(newcomment);
+                        }
+                    });
                     if ($defined(content)) {
                         setcommentcontent(newcomment, content);
                     } else {
@@ -1135,14 +1112,25 @@ function uploadpdf_init(Y) {
                 },
 
                 updatecomment: function (comment) {
+                    var waitel, pageloadcount, request, status;
                     if (!this.editing) {
                         return;
                     }
-                    var waitel, pageloadcount, request;
-                    waitel = new Element('div');
-                    waitel.set('class', 'wait');
-                    comment.adopt(waitel);
-                    comment.store('oldcolour', comment.retrieve('colour'));
+                    if (comment.getData('id') === -1) {
+                        // The comment does not have an ID from the server yet.
+                        status = comment.getData('status');
+                        if (status === 'saving' || status === 'needsupdate') {
+                            // Waiting for a previous update to save on the server - note the request for an update
+                            // and fire it off after this one has finished.
+                            comment.setData('status', 'needsupdate');
+                            return;
+                        }
+                        // First attempt to save this comment to the server - carry on.
+                        comment.setData('status', 'saving');
+                    }
+                    waitel = Y.Node.create('<div class="wait"></div>');
+                    comment.appendChild(waitel);
+                    comment.setData('oldcolour', comment.getData('colour'));
                     pageloadcount = this.pageloadcount;
                     request = new Request.JSON({
                         url: this.url,
@@ -1151,34 +1139,33 @@ function uploadpdf_init(Y) {
                         onSuccess: function (resp) {
                             if (pageloadcount !== server.pageloadcount) { return; }
                             server.retrycount = 0;
-                            if (waitel.destroy !== 'undefined') { waitel.destroy(); }
+                            comment.all('.wait').remove(true);
 
                             if (resp.error === 0) {
-                                comment.store('id', resp.id);
-                                // Re-attach drag and resize ability
-                                comment.retrieve('drag').attach();
-                                updatefindcomments(server.pageno.toInt(), resp.id, comment.retrieve('rawtext'));
+                                comment.setData('id', resp.id);
+                                if (comment.getData('status') === 'needsupdate') {
+                                    comment.setData('status', 'saving');
+                                    server.updatecomment(comment); // Now we have the ID, we have another update to send off.
+                                } else {
+                                    comment.setData('status', 'saved');
+                                }
+                                updatefindcomments(server.pageno.toInt(), resp.id, comment.getData('rawtext'));
                             } else {
                                 if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
                                     server.updatecomment(comment);
-                                } else {
-                                    // Re-attach drag and resize ability
-                                    comment.retrieve('drag').attach();
                                 }
                             }
                         },
 
                         onFailure: function () {
                             if (pageloadcount !== server.pageloadcount) { return; }
-                            if (waitel.destroy !== 'undefined') { waitel.destroy(); }
+                            comment.all('.wait').remove(true);
                             showsendfailed(function () { server.updatecomment(comment); });
-                            // The following should really be on the 'cancel' (but probably unimportant)
-                            comment.retrieve('drag').attach();
                         },
 
                         onTimeout: function () {
                             if (pageloadcount !== server.pageloadcount) { return; }
-                            if (waitel.destroy !== 'undefined') { waitel.destroy(); }
+                            comment.setData('status', ''); // Otherwise the new update won't get sent.
                             showsendfailed(function () { server.updatecomment(comment); });
                         }
 
@@ -1190,9 +1177,9 @@ function uploadpdf_init(Y) {
                             comment_position_x: comment.getStyle('left'),
                             comment_position_y: comment.getStyle('top'),
                             comment_width: comment.getStyle('width'),
-                            comment_text: comment.retrieve('rawtext'),
-                            comment_id: comment.retrieve('id'),
-                            comment_colour: comment.retrieve('colour'),
+                            comment_text: comment.getData('rawtext'),
+                            comment_id: comment.getData('id'),
+                            comment_colour: comment.getData('colour'),
                             id: this.id,
                             submissionid: this.submissionid,
                             pageno: this.pageno,
@@ -1250,18 +1237,10 @@ function uploadpdf_init(Y) {
                                 if (pageno === server.pageno) { // Make sure the page hasn't changed since we sent this request
                                     //document.id('pdfholder').getElements('div').destroy(); // Destroy all the currently displayed comments (just in case!) - this turned out to be a bad idea
                                     resp.comments.each(function (comment) {
-                                        var cb, style;
+                                        var cb;
                                         cb = makecommentbox(comment.position, comment.text, comment.colour);
-                                        if (Browser.ie && Browser.version < 9) {
-                                            // Does not work with FF & Moodle
-                                            cb.setStyle('width', comment.width);
-                                        } else {
-                                            // Does not work with IE
-                                            style = cb.get('style') + ' width:' + comment.width + 'px;';
-                                            cb.set('style', style);
-                                        }
-
-                                        cb.store('id', comment.id);
+                                        cb.setStyle('width', comment.width + 'px');
+                                        cb.setData('id', comment.id);
                                     });
 
                                     // Get annotations at the same time
@@ -1610,13 +1589,13 @@ function uploadpdf_init(Y) {
                 }
 
                 var modifier, imgpos, offs;
-                modifier = Browser.Platform.mac ? e.alt : e.control;
+                modifier = (Y.UA.os === 'macintosh') ? e.altKey : e.ctrlKey;
                 if (!modifier) {  // If control pressed, then drawing line
                     // Calculate the relative position of the comment
-                    imgpos = document.id('pdfimg').getPosition();
+                    imgpos = Y.one('#pdfimg').getXY();
                     offs = {
-                        x: e.page.x - imgpos.x,
-                        y: e.page.y - imgpos.y
+                        x: e.pageX - imgpos[0],
+                        y: e.pageY - imgpos[1]
                     };
                     currentcomment = makecommentbox(offs);
                 }
@@ -1830,10 +1809,10 @@ function uploadpdf_init(Y) {
                 prevbutton.on("click", gotoprevpage);
                 nextbutton = new YH.widget.Button("nextpage");
                 nextbutton.on("click", gotonextpage);
-                document.id('selectpage').addEvent('change', selectpage);
-                document.id('selectpage2').addEvent('change', selectpage2);
-                document.id('prevpage2').addEvent('click', gotoprevpage);
-                document.id('nextpage2').addEvent('click', gotonextpage);
+                Y.one('#selectpage').on('change', selectpage);
+                Y.one('#selectpage2').on('change', selectpage2);
+                Y.one('#prevpage2').on('click', gotoprevpage);
+                Y.one('#nextpage2').on('click', gotonextpage);
                 findcommentsmenu = new YH.widget.Button("findcommentsbutton", {
                     type: "menu",
                     menu: "findcommentsselect",
@@ -1857,9 +1836,9 @@ function uploadpdf_init(Y) {
                 server.getcomments();
 
                 if (server.editing) {
-                    document.id('pdfimg').addEvent('click', addcomment);
+                    Y.one('#pdfimg').on('click', addcomment);
                     document.id('pdfimg').addEvent('mousedown', startline);
-                    document.id('pdfimg').ondragstart = function () { return false; }; // To stop ie trying to drag the image
+                    Y.one('#pdfimg')._node.ondragstart = function () { return false; }; // To stop ie trying to drag the image
                     colour = Cookie.read('uploadpdf_colour');
                     if (!$defined(colour)) {
                         colour = 'yellow';
