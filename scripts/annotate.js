@@ -505,7 +505,7 @@ function uploadpdf_init(Y) {
                         node: newcomment
                     });
                     drag.plug(Y.Plugin.DDConstrained, {
-                        constrain: '#pdfholder' // TODO davo - work out why this isn't working
+                        constrain: '#pdfholder'
                     });
                     drag.on('drag:end', function (e) {
                         if (!editbox) { // No updates whilst editing the text.
