@@ -134,13 +134,15 @@ function uploadpdf_init(Y) {
             }
 
             function gotopage(pageno) {
-                var pagecount;
+                var pagecount, i;
                 pageno = parseInt(pageno, 10);
                 pagecount = server_config.pagecount.toInt();
                 if ((pageno <= pagecount) && (pageno > 0)) {
-                    document.id('pdfholder').getElements('.comment').destroy(); // Destroy all the currently displayed comments
-                    allannotations.each(function (p) { p.destroy(); });
-                    allannotations.empty();
+                    Y.one('#pdfholder').all('.comment').remove(true); // Remove all the currently displayed comments
+                    for (i = 0; i < allannotations.length; i += 1) {
+                        allannotations[i].remove(true); // Remove all the currently displayed annotations.
+                    }
+                    allannotations.length = 0; // Clear the list.
                     abortline(); // Abandon any lines currently being drawn
                     currentcomment = null; // Throw away any comments in progress
                     editbox = null;
@@ -148,7 +150,7 @@ function uploadpdf_init(Y) {
 
                     updatepagenavigation(pageno);
 
-                    server.pageno = "" + pageno;
+                    server.pageno = pageno.toString();
                     server.pageloadcount += 1;
                     server.getimageurl(pageno, true);
                 }
@@ -167,17 +169,11 @@ function uploadpdf_init(Y) {
             }
 
             function selectpage() {
-                var el, idx;
-                el = document.id('selectpage');
-                idx = el.selectedIndex;
-                gotopage(el[idx].value);
+                gotopage(Y.one('#selectpage').get('value'));
             }
 
             function selectpage2() {
-                var el, idx;
-                el = document.id('selectpage2');
-                idx = el.selectedIndex;
-                gotopage(el[idx].value);
+                gotopage(Y.one('#selectpage2').get('value'));
             }
 
             function updatefindcomments(page, id, text) {
