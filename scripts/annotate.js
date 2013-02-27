@@ -81,7 +81,7 @@ function uploadpdf_init(Y) {
                 Y.one('#sendagain').on('click', hidesendfailed);
                 Y.one('#cancelsendagain').on('click', hidesendfailed);
 
-                document.id('sendfailed').setStyles({display: 'block', position: 'absolute', top: 200, left: 200, 'z-index': 9999, 'background-color': '#d0d0d0', 'border': 'black 1px solid', padding: 10});
+                Y.one('#sendfailed').setStyle('display', 'block');
             }
 
             function showpage(pageno) {

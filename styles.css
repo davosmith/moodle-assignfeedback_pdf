@@ -169,3 +169,13 @@
 .assignfeedback_pdf_noblocks #page-content #region-main-wrap {
     width: auto;
 }
+
+.path-mod-assign-feedback-pdf #sendfailed {
+    position: absolute;
+    top: 200px;
+    left: 200px;
+    z-index: 9999;
+    background-color: #d0d0d0;
+    border: black 1px solid;
+    padding: 10px;
+}
