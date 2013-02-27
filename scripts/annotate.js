@@ -1,4 +1,4 @@
-/*global Class, Events, Element, Request, Browser, Cookie, ContextMenu*/ // MooTools classes
+/*global Events, Element, Request, Browser, ContextMenu*/ // MooTools classes
 /*global Raphael*/
 /*global document, confirm, alert, Image, window, top, setTimeout */ // Standard Javascript elements
 /*global server_config */
@@ -305,7 +305,7 @@ function uploadpdf_init(Y) {
                         setcolourclass(getcurrentcolour(), currentcomment);
                     }
                 }
-                Cookie.write('uploadpdf_colour', getcurrentcolour());
+                Y.Cookie.set('feedbackpdf_colour', getcurrentcolour());
             }
 
             function setcurrentcolour(colour) {
@@ -571,7 +571,7 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                Cookie.write('uploadpdf_tool', toolname);
+                Y.Cookie.set('feedbackpdf_tool', toolname);
                 abortline(); // Just in case we are in the middle of drawing, when we change tools
                 toolname += 'icon';
                 var btns, count, idx, i;
@@ -598,7 +598,7 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                Cookie.write('uploadpdf_linecolour', getcurrentlinecolour());
+                Y.Cookie.set('feedbackpdf_linecolour', getcurrentlinecolour());
             }
 
             function setcurrentlinecolour(colour) {
@@ -706,7 +706,7 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                Cookie.write('uploadpdf_stamp', getcurrentstamp());
+                Y.Cookie.set('feedbackpdf_stamp', getcurrentstamp());
                 if (e !== false) {
                     setcurrenttool('stamp');
                 }
@@ -1800,7 +1800,7 @@ function uploadpdf_init(Y) {
                         choosedrawingtool.on("checkedButtonChange", function (e) {
                             var newtool = e.newValue.get("value");
                             newtool = newtool.substr(0, newtool.length - 4); // Strip off the 'icon' part
-                            Cookie.write('uploadpdf_tool', newtool);
+                            Y.Cookie.set('feedbackpdf_tool', newtool);
                         });
                     }
                 }
@@ -1839,29 +1839,27 @@ function uploadpdf_init(Y) {
                     Y.one('#pdfimg').on('click', addcomment);
                     document.id('pdfimg').addEvent('mousedown', startline);
                     Y.one('#pdfimg')._node.ondragstart = function () { return false; }; // To stop ie trying to drag the image
-                    colour = Cookie.read('uploadpdf_colour');
+                    colour = Y.Cookie.get('feedbackpdf_colour');
                     if (!$defined(colour)) {
                         colour = 'yellow';
                     }
                     setcurrentcolour(colour);
-                    linecolour = Cookie.read('uploadpdf_linecolour');
+                    linecolour = Y.Cookie.get('feedbackpdf_linecolour');
                     if (!$defined(linecolour)) {
                         linecolour = 'red';
                     }
                     setcurrentlinecolour(linecolour);
-                    stamp = Cookie.read('uploadpdf_stamp');
+                    stamp = Y.Cookie.get('feedbackpdf_stamp');
                     if (!$defined(stamp) || stamp === 'null') {
                         stamp = 'tick';
                     }
                     setcurrentstamp(stamp, false);
-                    tool = Cookie.read('uploadpdf_tool');
+                    tool = Y.Cookie.get('feedbackpdf_tool');
                     if (!$defined(tool)) {
                         tool = 'comment';
                     }
                     setcurrenttool(tool);
 
-                    //content = Y.one('#annotationhelp_text');
-                    //content = content.getHTML();
                     helppanel = new Y.Panel({
                         bodyContent: Y.one('#annotationhelp_text').getHTML(),
                         headerContent: 'Help',
