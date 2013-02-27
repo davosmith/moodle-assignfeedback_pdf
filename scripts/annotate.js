@@ -106,24 +106,12 @@ function uploadpdf_init(Y) {
                 pagecount = server_config.pagecount.toInt();
 
                 // Set the dropdown selects to have the correct page number in them
-                el = document.id('selectpage');
-                for (i = 0; i < el.length; i += 1) {
-                    if (parseInt(el[i].value, 10) === pageno) {
-                        el.selectedIndex = i;
-                        break;
-                    }
-                }
-                el = document.id('selectpage2');
-                for (i = 0; i < el.length; i += 1) {
-                    if (parseInt(el[i].value, 10) === pageno) {
-                        el.selectedIndex = i;
-                        break;
-                    }
-                }
+                Y.one('#selectpage').set('value', pageno.toString());
+                Y.one('#selectpage2').set('value', pageno.toString());
 
                 if (server.editing) {
                     // Update the 'open in new window' link
-                    opennew = document.id('opennewwindow');
+                    opennew = Y.one('#opennewwindow');
                     on_link = opennew.get('href').replace(/pageno=\d+/, "pageno=" + pageno);
                     opennew.set('href', on_link);
                 }
@@ -131,17 +119,17 @@ function uploadpdf_init(Y) {
                 //Update the next/previous buttons
                 if (pageno === pagecount) {
                     nextbutton.set('disabled', true);
-                    document.id('nextpage2').set('disabled', 'disabled');
+                    Y.one('#nextpage2').set('disabled', 'disabled');
                 } else {
                     nextbutton.set('disabled', false);
-                    document.id('nextpage2').erase('disabled');
+                    Y.one('#nextpage2').removeAttribute('disabled');
                 }
                 if (pageno === 1) {
                     prevbutton.set('disabled', true);
-                    document.id('prevpage2').set('disabled', 'disabled');
+                    Y.one('#prevpage2').set('disabled', 'disabled');
                 } else {
                     prevbutton.set('disabled', false);
-                    document.id('prevpage2').erase('disabled');
+                    Y.one('#prevpage2').removeAttribute('disabled');
                 }
             }
 
