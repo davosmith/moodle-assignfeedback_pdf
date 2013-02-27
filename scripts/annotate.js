@@ -86,23 +86,15 @@ function uploadpdf_init(Y) {
 
             function showpage(pageno) {
                 var pdfsize, style, pdfimg;
-                pdfsize = document.id('pdfsize');
-                if (Browser.ie && Browser.version < 9) {
-                    // Does not work with FF & Moodle
-                    pdfsize.setStyle('width', pagelist[pageno].width);
-                    pdfsize.setStyle('height', pagelist[pageno].height);
-                } else {
-                    // Does not work with IE
-                    style = 'height:' + pagelist[pageno].height + 'px; width:' + pagelist[pageno].width + 'px;' + ' clear: both;';
-                    pdfsize.set('style', style);
-                }
-                pdfimg = document.id('pdfimg');
-                pdfimg.setProperty('width', pagelist[pageno].width);
-                pdfimg.setProperty('height', pagelist[pageno].height);
+                pdfsize = Y.one('#pdfsize');
+                pdfsize.setStyles({width: pagelist[pageno].width + 'px', height: pagelist[pageno].height + 'px'});
+                pdfimg = Y.one('#pdfimg');
+                pdfimg.set('width', pagelist[pageno].width);
+                pdfimg.set('height', pagelist[pageno].height);
                 if (pagelist[pageno].image.complete) {
-                    pdfimg.setProperty('src', pagelist[pageno].url);
+                    pdfimg.set('src', pagelist[pageno].url);
                 } else {
-                    pdfimg.setProperty('src', server_config.blank_image);
+                    pdfimg.set('src', server_config.blank_image);
                     setTimeout(function () { check_pageimage(pageno); }, 200);
                 }
                 server.getcomments();
