@@ -101,7 +101,7 @@ function uploadpdf_init(Y) {
             }
 
             function updatepagenavigation(pageno) {
-                var pagecount, el, i, opennew, on_link;
+                var pagecount, opennew, on_link;
                 pageno = parseInt(pageno, 10);
                 pagecount = server_config.pagecount.toInt();
 
@@ -340,7 +340,7 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                if (colour !== comment.retrieve('colour')) {
+                if (colour !== comment.getData('colour')) {
                     setcolourclass(colour, comment);
                     setcurrentcolour(colour);
                     if (comment !== currentcomment) {
@@ -367,9 +367,10 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                if (e.key === 'esc') {
+                if (e.keyCode === 27) { // 'Esc' key pressed.
                     updatelastcomment();
-                    e.stop();
+                    e.preventDefault();
+                    e.stopPropagation();
                 }
             }
 
@@ -378,7 +379,7 @@ function uploadpdf_init(Y) {
                     return false;
                 }
                 // Stop trapping 'escape'
-                document.removeEvent('keydown', typingcomment);
+                Y.Event.detach('keydown', typingcomment, Y.one('body'));
 
                 var updated, content, id, oldcolour, newcolour;
                 updated = false;
@@ -427,7 +428,7 @@ function uploadpdf_init(Y) {
                 comment.appendChild(editbox);
                 editbox.focus();
 
-                document.addEvent('keydown', typingcomment);
+                Y.one('body').on('keydown', typingcomment);
             }
 
             function editcomment(e) {
@@ -526,8 +527,8 @@ function uploadpdf_init(Y) {
                     return;
                 }
                 if (currentline) {
-                    document.id(document).removeEvent('mousemove', updateline);
-                    document.id(document).removeEvent('mouseup', finishline);
+                    Y.Event.detach('mousemove', updateline, Y.one('body'));
+                    Y.Event.detach('mouseup', finishline, Y.one('body'));
                     if ($defined(currentpaper)) {
                         currentpaper.remove();
                         currentpaper = null;
@@ -701,24 +702,36 @@ function uploadpdf_init(Y) {
                 changestamp(settool);
             }
 
+            function get_pdf_dims() {
+                var pdf, dims;
+                pdf = Y.one('#pdfimg');
+                dims = {
+                    width: parseInt(pdf.getComputedStyle('width'), 10),
+                    height: parseInt(pdf.getComputedStyle('height'), 10),
+                    left: pdf.getX(),
+                    top: pdf.getY()
+                };
+                return dims;
+            }
+
             function finishline(e) {
                 if (!server.editing) {
                     return;
                 }
-                document.id(document).removeEvent('mousemove', updateline);
-                document.id(document).removeEvent('mouseup', finishline);
+                Y.Event.detach('mousemove', updateline, Y.one('body'));
+                Y.Event.detach('mouseup', finishline, Y.one('body'));
 
                 if (!$defined(currentpaper)) {
                     return;
                 }
 
                 var dims, coords, tool;
-                dims = document.id('pdfimg').getCoordinates();
+                dims = get_pdf_dims();
                 tool = getcurrenttool();
                 if (tool === 'freehand') {
                     coords = freehandpoints;
                 } else {
-                    coords = {sx: linestartpos.x, sy: linestartpos.y, ex: (e.page.x - dims.left), ey: (e.page.y - dims.top)};
+                    coords = {sx: linestartpos.x, sy: linestartpos.y, ex: (e.pageX - dims.left), ey: (e.pageY - dims.top)};
                     if (coords.ex > dims.width) {
                         coords.ex = dims.width;
                     }
@@ -747,9 +760,9 @@ function uploadpdf_init(Y) {
 
                 var dims, ex, ey, currenttool, w, h, sx, sy, rx, ry, dx, dy, dist;
 
-                dims = document.id('pdfimg').getCoordinates();
-                ex = e.page.x - dims.left;
-                ey = e.page.y - dims.top;
+                dims = get_pdf_dims();
+                ex = e.pageX - dims.left;
+                ey = e.pageY - dims.top;
 
                 if (ex > dims.width) {
                     ex = dims.width;
@@ -770,7 +783,7 @@ function uploadpdf_init(Y) {
                     currentline.remove();
                 } else {
                     // Doing this earlier catches the starting mouse click by mistake
-                    document.id(document).addEvent('mouseup', finishline);
+                    Y.one('body').on('mouseup', finishline);
                 }
 
                 switch (currenttool) {
@@ -830,7 +843,7 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return true;
                 }
-                if (e.rightClick) {
+                if (e.button !== 1) { // Left button only
                     return true;
                 }
 
@@ -859,18 +872,18 @@ function uploadpdf_init(Y) {
 
                 e.preventDefault(); // Stop FF from dragging the image
 
-                dims = document.id('pdfimg').getCoordinates();
-                sx = e.page.x - dims.left;
-                sy = e.page.y - dims.top;
+                dims = get_pdf_dims();
+                sx = e.pageX - dims.left;
+                sy = e.pageY - dims.top;
 
                 currentpaper = new Raphael(dims.left, dims.top, dims.width, dims.height);
-                document.id(document).addEvent('mousemove', updateline);
+                Y.one('body').on('mousemove', updateline);
                 linestartpos = {x: sx, y: sy};
                 if (tool === 'freehand') {
                     freehandpoints = [{x: linestartpos.x, y: linestartpos.y}];
                 }
                 if (tool === 'stamp') {
-                    document.id(document).addEvent('mouseup', finishline); // Click without move = default sized stamp
+                    Y.one('body').on('mouseup', finishline); // Click without move = default sized stamp
                 }
 
                 return false;
@@ -884,7 +897,7 @@ function uploadpdf_init(Y) {
                     linewidth = 0;
                 }
                 halflinewidth = linewidth * 0.5;
-                container = new Element('span');
+                container = Y.Node.create('<span></span>');
 
                 if (!$defined(colour)) {
                     colour = getcurrentlinecolour();
@@ -914,21 +927,15 @@ function uploadpdf_init(Y) {
                     if (boundary.h < 14) {
                         boundary.h = 14;
                     }
-                    if (Browser.ie && Browser.version < 9) {
-                        // Does not work with FF & Moodle
-                        container.setStyles({
-                            left: boundary.x,
-                            top: boundary.y,
-                            width: boundary.w + 2,
-                            height: boundary.h + 2,
-                            position: 'absolute'
-                        });
-                    } else {
-                        // Does not work with IE
-                        container.set('style', 'position:absolute; top:' + boundary.y + 'px; left:' + boundary.x + 'px; width:' + (boundary.w + 2) + 'px; height:' + (boundary.h + 2) + 'px;');
-                    }
-                    document.id('pdfholder').adopt(container);
-                    paper = new Raphael(container);
+                    container.setStyles({
+                        left: boundary.x + 'px',
+                        top: boundary.y + 'px',
+                        width: (boundary.w + 2) + 'px',
+                        height: (boundary.h + 2) + 'px',
+                        position: 'absolute'
+                    });
+                    Y.one('#pdfholder').appendChild(container);
+                    paper = new Raphael(container.getDOMNode());
                     minx -= halflinewidth;
                     miny -= halflinewidth;
 
@@ -982,21 +989,15 @@ function uploadpdf_init(Y) {
                     if (boundary.h < 14) {
                         boundary.h = 14;
                     }
-                    if (Browser.ie && Browser.version < 9) {
-                        // Does not work with FF & Moodle
-                        container.setStyles({
-                            left: boundary.x,
-                            top: boundary.y,
-                            width: boundary.w + 2,
-                            height: boundary.h + 2,
-                            position: 'absolute'
-                        });
-                    } else {
-                        // Does not work with IE
-                        container.set('style', 'position:absolute; top:' + boundary.y + 'px; left:' + boundary.x + 'px; width:' + (boundary.w + 2) + 'px; height:' + (boundary.h + 2) + 'px;');
-                    }
-                    document.id('pdfholder').adopt(container);
-                    paper = new Raphael(container);
+                    container.setStyles({
+                        left: boundary.x + 'px',
+                        top: boundary.y + 'px',
+                        width: (boundary.w + 2) + 'px',
+                        height: (boundary.h + 2) + 'px',
+                        position: 'absolute'
+                    });
+                    Y.one('#pdfholder').appendChild(container);
+                    paper = new Raphael(container.getDOMNode());
                     switch (type) {
                     case 'rectangle':
                         w = Math.abs(coords.ex - coords.sx);
@@ -1039,23 +1040,23 @@ function uploadpdf_init(Y) {
                 line.attr("stroke-width", linewidth);
                 setlinecolour(colour, line, type);
 
-                domcanvas = document.id(paper.canvas);
+                domcanvas = Y.one(paper.canvas);
 
-                domcanvas.store('container', container);
-                domcanvas.store('width', boundary.w);
-                domcanvas.store('height', boundary.h);
-                domcanvas.store('line', line);
-                domcanvas.store('colour', colour);
+                domcanvas.setData('container', container);
+                domcanvas.setData('width', boundary.w);
+                domcanvas.setData('height', boundary.h);
+                domcanvas.setData('line', line);
+                domcanvas.setData('colour', colour);
                 if (server.editing) {
-                    domcanvas.addEvent('mousedown', startline);
-                    domcanvas.addEvent('click', eraseline);
+                    domcanvas.on('mousedown', startline);
+                    domcanvas.on('click', eraseline);
                     if ($defined(id)) {
-                        domcanvas.store('id', id);
+                        domcanvas.setData('id', id);
                     } else {
                         server.addannotation(details, domcanvas);
                     }
                 } else {
-                    domcanvas.store('id', id);
+                    domcanvas.setData('id', id);
                 }
 
                 allannotations.push(container);
@@ -1082,12 +1083,14 @@ function uploadpdf_init(Y) {
                     this.url = settings.updatepage;
                     this.editing = settings.editing.toInt();
 
+                    // TODO davo - remove MooTools
                     this.waitel = new Element('div');
                     this.waitel.set('class', 'pagewait hidden');
                     document.id('pdfholder').adopt(this.waitel);
                 },
 
                 updatecomment: function (comment) {
+                    // TODO davo - remove MooTools
                     var waitel, pageloadcount, request, status;
                     if (!this.editing) {
                         return;
@@ -1165,6 +1168,7 @@ function uploadpdf_init(Y) {
                 },
 
                 removecomment: function (cid) {
+                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
@@ -1197,6 +1201,7 @@ function uploadpdf_init(Y) {
                 },
 
                 getcomments: function () {
+                    // TODO davo - remove MooTools
                     this.waitel.removeClass('hidden');
                     var pageno, scrolltocommentid, request;
                     pageno = this.pageno;
@@ -1220,8 +1225,8 @@ function uploadpdf_init(Y) {
                                     });
 
                                     // Get annotations at the same time
-                                    allannotations.each(function (p) { p.destroy(); });
-                                    allannotations.empty();
+                                    allannotations.each(function (p) { p.remove(true); });
+                                    allannotations.length = 0;
                                     resp.annotations.each(function (annotation) {
                                         var coords, points, i;
                                         if (annotation.type === 'freehand') {
@@ -1266,6 +1271,7 @@ function uploadpdf_init(Y) {
                 },
 
                 getquicklist: function () {
+                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
@@ -1298,6 +1304,7 @@ function uploadpdf_init(Y) {
                 },
 
                 addtoquicklist: function (element) {
+                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
@@ -1333,6 +1340,7 @@ function uploadpdf_init(Y) {
                 },
 
                 removefromquicklist: function (itemid) {
+                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
@@ -1365,6 +1373,7 @@ function uploadpdf_init(Y) {
                 },
 
                 getimageurl: function (pageno, changenow) {
+                    // TODO davo - remove MooTools
                     if (changenow) {
                         if ($defined(pagelist[pageno])) {
                             showpage(pageno);
@@ -1447,6 +1456,7 @@ function uploadpdf_init(Y) {
                 },
 
                 addannotation: function (details, annotation) {
+                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
@@ -1469,7 +1479,7 @@ function uploadpdf_init(Y) {
 
                             if (resp.error === 0) {
                                 if (details.id < 0) { // A new line
-                                    annotation.store('id', resp.id);
+                                    annotation.setData('id', resp.id);
                                 }
                             } else {
                                 if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
@@ -1512,6 +1522,7 @@ function uploadpdf_init(Y) {
                 },
 
                 removeannotation: function (aid) {
+                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
@@ -1585,12 +1596,16 @@ function uploadpdf_init(Y) {
                     return false;
                 }
 
-                var id, container;
-                id = this.retrieve('id');
+                var id, container, target, pos;
+                target = e.currentTarget;
+                id = target.getData('id');
                 if (id) {
-                    container = this.retrieve('container');
-                    allannotations.erase(container);
-                    container.destroy();
+                    container = target.getData('container');
+                    pos = Y.Array.indexOf(allannotations, container);
+                    if (pos !== -1) {
+                        allannotations.splice(pos, 1); // Remove from the 'allannotations' list.
+                    }
+                    container.remove(true);
                     server.removeannotation(id);
                 }
 
@@ -1598,6 +1613,7 @@ function uploadpdf_init(Y) {
             }
 
             function keyboardnavigation(e) {
+                // TODO davo - remove MooTools
                 if ($defined(currentcomment)) {
                     return; // No keyboard navigation when editing comments
                 }
@@ -1648,6 +1664,7 @@ function uploadpdf_init(Y) {
             }
 
             function doscrolltocomment(commentid) {
+                // TODO davo - remove MooTools
                 commentid = parseInt(commentid, 10);
                 if (commentid === 0) {
                     return;
@@ -1703,6 +1720,7 @@ function uploadpdf_init(Y) {
 
                 var showPreviousMenu, colour, linecolour, stamp, tool, pageno, sel, selidx, selpage, btn, helppanel;
 
+                // TODO davo - remove YUI2 buttons
                 if (server.editing) {
                     if (document.getElementById('choosecolour')) {
                         colourmenu = new YH.widget.Button("choosecolour", {
@@ -1813,7 +1831,7 @@ function uploadpdf_init(Y) {
 
                 if (server.editing) {
                     Y.one('#pdfimg').on('click', addcomment);
-                    document.id('pdfimg').addEvent('mousedown', startline);
+                    Y.one('#pdfimg').on('mousedown', startline);
                     Y.one('#pdfimg')._node.ondragstart = function () { return false; }; // To stop ie trying to drag the image
                     colour = Y.Cookie.get('feedbackpdf_colour');
                     if (!$defined(colour)) {
@@ -1859,10 +1877,12 @@ function uploadpdf_init(Y) {
                 }
 
                 // Start preloading pages if using js navigation method
+                // TODO davo - remove MooTools
                 document.addEvent('keydown', keyboardnavigation);
                 pagelist = [];
                 pageno = server.pageno.toInt();
                 // Little fix as Firefox remembers the selected option after a page refresh
+                // TODO davo - remove MooTools
                 sel = document.id('selectpage');
                 selidx = sel.selectedIndex;
                 selpage = sel[selidx].value;
@@ -1873,12 +1893,14 @@ function uploadpdf_init(Y) {
                     server.getimageurl(pageno + 1, false);
                 }
 
+                // TODO davo - remove MooTools
                 window.addEvent('beforeunload', function () {
                     pageunloading = true;
                 });
             }
 
             function context_quicklistnoitems() {
+                // TODO davo - remove MooTools
                 if (!server.editing) {
                     return;
                 }
@@ -1893,6 +1915,7 @@ function uploadpdf_init(Y) {
             }
 
             function addtoquicklist(item) {
+                // TODO davo - remove MooTools
                 if (!server.editing) {
                     return;
                 }
@@ -1942,6 +1965,7 @@ function uploadpdf_init(Y) {
             }
 
             function removefromquicklist(itemid) {
+                // TODO davo - remove MooTools
                 if (!server.editing) {
                     return;
                 }
@@ -1951,6 +1975,7 @@ function uploadpdf_init(Y) {
             }
 
             function initcontextmenu() {
+                // TODO davo - remove MooTools
                 if (!server.editing) {
                     return;
                 }
