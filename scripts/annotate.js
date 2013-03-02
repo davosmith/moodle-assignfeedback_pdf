@@ -379,7 +379,7 @@ function uploadpdf_init(Y) {
                     return false;
                 }
                 // Stop trapping 'escape'
-                Y.Event.detach('keydown', typingcomment, Y.one('body'));
+                Y.Event.detach('keydown', typingcomment, Y.one('document'));
 
                 var updated, content, id, oldcolour, newcolour;
                 updated = false;
@@ -428,7 +428,7 @@ function uploadpdf_init(Y) {
                 comment.appendChild(editbox);
                 editbox.focus();
 
-                Y.one('body').on('keydown', typingcomment);
+                Y.one('document').on('keydown', typingcomment);
             }
 
             function editcomment(e) {
@@ -527,8 +527,8 @@ function uploadpdf_init(Y) {
                     return;
                 }
                 if (currentline) {
-                    Y.Event.detach('mousemove', updateline, Y.one('body'));
-                    Y.Event.detach('mouseup', finishline, Y.one('body'));
+                    Y.Event.detach('mousemove', updateline, Y.one('document'));
+                    Y.Event.detach('mouseup', finishline, Y.one('document'));
                     if ($defined(currentpaper)) {
                         currentpaper.remove();
                         currentpaper = null;
@@ -718,8 +718,8 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                Y.Event.detach('mousemove', updateline, Y.one('body'));
-                Y.Event.detach('mouseup', finishline, Y.one('body'));
+                Y.Event.detach('mousemove', updateline, Y.one('document'));
+                Y.Event.detach('mouseup', finishline, Y.one('document'));
 
                 if (!$defined(currentpaper)) {
                     return;
@@ -783,7 +783,7 @@ function uploadpdf_init(Y) {
                     currentline.remove();
                 } else {
                     // Doing this earlier catches the starting mouse click by mistake
-                    Y.one('body').on('mouseup', finishline);
+                    Y.one('document').on('mouseup', finishline);
                 }
 
                 switch (currenttool) {
@@ -877,13 +877,13 @@ function uploadpdf_init(Y) {
                 sy = e.pageY - dims.top;
 
                 currentpaper = new Raphael(dims.left, dims.top, dims.width, dims.height);
-                Y.one('body').on('mousemove', updateline);
+                Y.one('document').on('mousemove', updateline);
                 linestartpos = {x: sx, y: sy};
                 if (tool === 'freehand') {
                     freehandpoints = [{x: linestartpos.x, y: linestartpos.y}];
                 }
                 if (tool === 'stamp') {
-                    Y.one('body').on('mouseup', finishline); // Click without move = default sized stamp
+                    Y.one('document').on('mouseup', finishline); // Click without move = default sized stamp
                 }
 
                 return false;
@@ -1083,10 +1083,9 @@ function uploadpdf_init(Y) {
                     this.url = settings.updatepage;
                     this.editing = settings.editing.toInt();
 
-                    // TODO davo - remove MooTools
-                    this.waitel = new Element('div');
-                    this.waitel.set('class', 'pagewait hidden');
-                    document.id('pdfholder').adopt(this.waitel);
+                    this.waitel = Y.Node.create('<div></div>');
+                    this.waitel.addClass('pagewait').addClass('hidden');
+                    Y.one('#pdfholder').appendChild(this.waitel);
                 },
 
                 updatecomment: function (comment) {
@@ -1613,48 +1612,45 @@ function uploadpdf_init(Y) {
             }
 
             function keyboardnavigation(e) {
-                // TODO davo - remove MooTools
                 if ($defined(currentcomment)) {
                     return; // No keyboard navigation when editing comments
                 }
 
-                /*var modifier = Browser.Platform.mac ? e.alt : e.control;*/
-
-                if (e.key === 'n') {
+                if (e.keyCode === 78) { // n
                     gotonextpage();
-                } else if (e.key === 'p') {
+                } else if (e.keyCode === 80) { // p
                     gotoprevpage();
                 }
                 if (server.editing) {
-                    if (e.key === 'c') {
+                    if (e.keyCode === 67) { // c
                         setcurrenttool('comment');
-                    } else if (e.key === 'l') {
+                    } else if (e.keyCode === 76) { // l
                         setcurrenttool('line');
-                    } else if (e.key === 'r') {
+                    } else if (e.keyCode === 82) { // r
                         setcurrenttool('rectangle');
-                    } else if (e.key === 'o') {
+                    } else if (e.keyCode === 79) { // o
                         setcurrenttool('oval');
-                    } else if (e.key === 'f') {
+                    } else if (e.keyCode === 70) { // f
                         setcurrenttool('freehand');
-                    } else if (e.key === 'h') {
+                    } else if (e.keyCode === 72) { // h
                         setcurrenttool('highlight');
-                    } else if (e.key === 's') {
+                    } else if (e.keyCode === 83) { // s
                         setcurrenttool('stamp');
-                    } else if (e.key === 'e') {
+                    } else if (e.keyCode === 69) { // e
                         setcurrenttool('erase');
                         /*} else if (e.key === 'g' && modifier) {
                          // get this working (at some point)
                          var btn = document.id('generateresponse');
                          var frm = btn.parentNode;
                          frm.submit();*/
-                    } else if (e.code === 219) {  // { or [
-                        if (e.shift) {
+                    } else if (e.keyCode === 219) {  // { or [
+                        if (e.shiftKey) {
                             prevlinecolour();
                         } else {
                             prevcommentcolour();
                         }
-                    } else if (e.code === 221) {  // } or ]
-                        if (e.shift) {
+                    } else if (e.keyCode === 221) {  // } or ]
+                        if (e.shiftKey) {
                             nextlinecolour();
                         } else {
                             nextcommentcolour();
@@ -1877,8 +1873,7 @@ function uploadpdf_init(Y) {
                 }
 
                 // Start preloading pages if using js navigation method
-                // TODO davo - remove MooTools
-                document.addEvent('keydown', keyboardnavigation);
+                Y.one('document').on('keydown', keyboardnavigation);
                 pagelist = [];
                 pageno = server.pageno.toInt();
                 // Little fix as Firefox remembers the selected option after a page refresh
