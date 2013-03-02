@@ -381,7 +381,7 @@ function uploadpdf_init(Y) {
                 // Stop trapping 'escape'
                 Y.Event.detach('keydown', typingcomment, Y.one('document'));
 
-                var updated, content, id, oldcolour, newcolour;
+                var updated, content, id, oldcolour, newcolour, oldcontent;
                 updated = false;
                 content = null;
                 if (editbox !== null) {
@@ -400,8 +400,9 @@ function uploadpdf_init(Y) {
                     } else {
                         oldcolour = currentcomment.getData('oldcolour');
                         newcolour = currentcomment.getData('colour');
+                        oldcontent = currentcomment.getData('rawtext');
                         setcommentcontent(currentcomment, content);
-                        if ((content !== currentcomment.getData('rawtext')) || (newcolour !== oldcolour)) {
+                        if ((content !== oldcontent) || (newcolour !== oldcolour)) {
                             server.updatecomment(currentcomment);
                         }
                     }
@@ -550,6 +551,7 @@ function uploadpdf_init(Y) {
                 }
                 Y.Cookie.set('feedbackpdf_tool', toolname);
                 abortline(); // Just in case we are in the middle of drawing, when we change tools
+                updatelastcomment();
                 toolname += 'icon';
                 var btns, count, idx, i;
                 btns = choosedrawingtool.getButtons();
@@ -1638,11 +1640,6 @@ function uploadpdf_init(Y) {
                         setcurrenttool('stamp');
                     } else if (e.keyCode === 69) { // e
                         setcurrenttool('erase');
-                        /*} else if (e.key === 'g' && modifier) {
-                         // get this working (at some point)
-                         var btn = document.id('generateresponse');
-                         var frm = btn.parentNode;
-                         frm.submit();*/
                     } else if (e.keyCode === 219) {  // { or [
                         if (e.shiftKey) {
                             prevlinecolour();
@@ -1669,44 +1666,68 @@ function uploadpdf_init(Y) {
                     lasthighlight.removeClass('comment-highlight');
                     lasthighlight = null;
                 }
-                var comments = document.id('pdfholder').getElements('.comment');
+                var comments = Y.one('#pdfholder').all('.comment');
                 comments.each(function (comment) {
                     var dims, win, scroll, view, scrolltocoord;
 
-                    if (parseInt(comment.retrieve('id'), 10) === commentid) {
+                    if (parseInt(comment.getData('id'), 10) === commentid) {
                         comment.addClass('comment-highlight');
                         lasthighlight = comment;
 
-                        dims = comment.getCoordinates();
-                        win = window.getCoordinates();
-                        scroll = window.getScroll();
+                        dims = {
+                            left: comment.getX(),
+                            top: comment.getY(),
+                            height: parseInt(comment.getComputedStyle('height'), 10),
+                            width: parseInt(comment.getComputedStyle('width'), 10)
+                        };
+                        dims.right = dims.left + dims.width;
+                        dims.bottom = dims.top + dims.height;
+
+                        win = {
+                            left: 0,
+                            top: 0,
+                            height: window.innerHeight || document.documentElement.clientHeight ||
+                                document.getElementsByTagName('body')[0].clientHeigth,
+                            width: window.innerWidth || document.documentElement.clientWidth ||
+                                document.getElementsByTagName('body')[0].clientWidth
+                        };
+                        win.right = win.left + win.width;
+                        win.bottom = win.top + win.height;
+                        scroll = {
+                            left: (window.pageXOffset || document.body.scrollLeft),
+                            top: (window.pageYOffset || document.body.scrollTop)
+                        };
                         view = win;
-                        view.right += scroll.x;
-                        view.bottom += scroll.y;
+                        view.right += scroll.left;
+                        view.bottom += scroll.top;
+                        view.left += scroll.left;
+                        view.top += scroll.top;
 
-                        scrolltocoord = {x: scroll.x, y: scroll.y};
+                        scrolltocoord = {left: scroll.left, top: scroll.top};
 
-                        if (view.right < (dims.right + 10)) {
-                            if ((dims.width + 20) < win.width) {
+                        if (view.right < (dims.right + 30)) {
+                            if ((dims.width + 40) < win.width) {
                                 // Scroll right of comment onto the screen (if it will all fit)
-                                scrolltocoord.x = dims.right + 10 - win.width;
+                                scrolltocoord.left = dims.right + 30 - win.width;
                             } else {
                                 // Just scroll the left of the comment onto the screen
-                                scrolltocoord.x = dims.left - 10;
+                                scrolltocoord.left = dims.left - 10;
                             }
+                        } else if (view.left > (dims.left - 10)) {
+                            scrolltocoord.left = dims.left - 10;
                         }
 
-                        if (view.bottom < (dims.bottom + 10)) {
-                            if ((dims.height + 20) < win.height) {
+                        if (view.bottom < (dims.bottom + 30)) {
+                            if ((dims.height + 40) < win.height) {
                                 // Scroll bottom of comment onto the screen (if it will all fit)
-                                scrolltocoord.y = dims.bottom + 10 - win.height;
+                                scrolltocoord.top = dims.bottom + 30 - win.height;
                             } else {
                                 // Just scroll top of comment onto the screen
-                                scrolltocoord.y = dims.top - 10;
+                                scrolltocoord.top = dims.top - 10;
                             }
                         }
 
-                        window.scrollTo(scrolltocoord.x, scrolltocoord.y);
+                        window.scrollTo(scrolltocoord.left, scrolltocoord.top);
                     }
                 });
             }
@@ -1791,6 +1812,8 @@ function uploadpdf_init(Y) {
                             var newtool = e.newValue.get("value");
                             newtool = newtool.substr(0, newtool.length - 4); // Strip off the 'icon' part
                             Y.Cookie.set('feedbackpdf_tool', newtool);
+                            abortline();
+                            updatelastcomment();
                         });
                     }
                 }
@@ -1877,10 +1900,8 @@ function uploadpdf_init(Y) {
                 pagelist = [];
                 pageno = server.pageno.toInt();
                 // Little fix as Firefox remembers the selected option after a page refresh
-                // TODO davo - remove MooTools
-                sel = document.id('selectpage');
-                selidx = sel.selectedIndex;
-                selpage = sel[selidx].value;
+                sel = Y.one('#selectpage');
+                selpage = sel.get('value');
                 if (parseInt(selpage, 10) !== pageno) {
                     gotopage(selpage);
                 } else {
@@ -1888,8 +1909,10 @@ function uploadpdf_init(Y) {
                     server.getimageurl(pageno + 1, false);
                 }
 
-                // TODO davo - remove MooTools
-                window.addEvent('beforeunload', function () {
+                Y.one('window').on('unload', function (e) {
+                    pageunloading = true;
+                });
+                Y.one('window').on('beforeunload', function (e) {
                     pageunloading = true;
                 });
             }
