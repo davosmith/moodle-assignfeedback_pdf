@@ -452,7 +452,7 @@ function uploadpdf_init(Y) {
             function makecommentbox(position, content, colour) {
                 // Create the comment box
                 var newcomment, drag, resize, mootoolsel;
-                newcomment = new Y.Node.create('<div><div class="content"></div></div>');
+                newcomment = Y.Node.create('<div><div class="content"></div></div>');
                 Y.one('#pdfholder').appendChild(newcomment);
 
                 if (position.x < 0) {
@@ -474,8 +474,7 @@ function uploadpdf_init(Y) {
 
                 if (server.editing) {
                     if (context_comment) {
-                        // TODO fix the context menu
-                        //context_comment.addmenu(newcomment);
+                        context_comment.addmenu(newcomment);
                     }
 
                     newcomment.on('click', editcomment);
@@ -1347,8 +1346,8 @@ function uploadpdf_init(Y) {
 
                         data: {
                             action: 'addtoquicklist',
-                            colour: element.retrieve('colour'),
-                            text: element.retrieve('rawtext'),
+                            colour: element.getData('colour'),
+                            text: element.getData('rawtext'),
                             width: element.getStyle('width').toInt(),
                             id: this.id,
                             submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
@@ -1953,13 +1952,18 @@ function uploadpdf_init(Y) {
             }
 
             function context_quicklistnoitems() {
-                // TODO davo - remove MooTools
                 if (!server.editing) {
                     return;
                 }
 
                 if (context_quicklist.quickcount === 0) {
-                    if (!context_quicklist.menu.getElement('a[href$=noitems]')) {
+                    var hasnoitems = false;
+                    context_quicklist.menu.all('a').each(function (el) {
+                        if (el.get('href').split('#')[1] === 'noitems') {
+                            hasnoitems = true;
+                        }
+                    });
+                    if (!hasnoitems) {
                         context_quicklist.addItem('noitems', server_config.lang_emptyquicklist + ' &#0133;', null, function () { alert(server_config.lang_emptyquicklist_instructions); });
                     }
                 } else {
@@ -1968,7 +1972,6 @@ function uploadpdf_init(Y) {
             }
 
             function addtoquicklist(item) {
-                // TODO davo - remove MooTools
                 if (!server.editing) {
                     return;
                 }
@@ -1982,34 +1985,26 @@ function uploadpdf_init(Y) {
                 }
                 itemtext = itemtext.replace('<', '&lt;').replace('>', '&gt;');
 
-
                 quicklist[itemid] = item;
 
                 context_quicklist.addItem(itemid, itemtext, server_config.deleteicon, function (id, menu) {
                     var imgpos, pos, cb, style;
-                    imgpos = document.id('pdfimg').getPosition();
+                    imgpos = Y.one('#pdfimg').getXY();
                     pos = {
-                        x: menu.menu.getStyle('left').toInt() - imgpos.x - menu.options.offsets.x,
-                        y: menu.menu.getStyle('top').toInt() - imgpos.y - menu.options.offsets.y
+                        x: menu.menu.getStyle('left').toInt() - imgpos[0] - menu.options.offsets.x,
+                        y: menu.menu.getStyle('top').toInt() - imgpos[1] - menu.options.offsets.y
                     };
                     // Nasty hack to reposition the comment box in IE
-                    if (Browser.ie && Browser.version < 9) {
-                        if (Browser.ie6 || Browser.ie7) {
+                    if (Y.UA.ie) {
+                        if (Y.UA.ie === 6 || Y.UA.ie === 7) {
                             pos.x += 40;
                             pos.y -= 20;
-                        } else {
+                        } else if (Y.UA.ie === 8) {
                             pos.y -= 15;
                         }
                     }
                     cb = makecommentbox(pos, quicklist[id].text, quicklist[id].colour);
-                    if (Browser.ie && Browser.version < 9) {
-                        // Does not work with FF & Moodle
-                        cb.setStyle('width', quicklist[id].width);
-                    } else {
-                        // Does not work with IE
-                        style = cb.get('style') + ' width:' + quicklist[id].width + 'px;';
-                        cb.set('style', style);
-                    }
+                    cb.setStyle('width', quicklist[id].width + 'px');
                     server.updatecomment(cb);
                 }, itemfulltext);
 
@@ -2018,7 +2013,6 @@ function uploadpdf_init(Y) {
             }
 
             function removefromquicklist(itemid) {
-                // TODO davo - remove MooTools
                 if (!server.editing) {
                     return;
                 }
@@ -2028,30 +2022,29 @@ function uploadpdf_init(Y) {
             }
 
             function initcontextmenu() {
-                // TODO davo - remove MooTools
                 if (!server.editing) {
                     return;
                 }
                 var menu, items, n;
-                document.body.grab(document.id('context-quicklist'));
-                document.body.grab(document.id('context-comment'));
+                Y.one('#context-quicklist').appendTo('body');
+                Y.one('#context-comment').appendTo('body');
 
                 //create a context menu
                 context_quicklist = new ContextMenu({
                     targets: null,
-                    menu: 'context-quicklist',
+                    menu: '#context-quicklist',
                     actions: {
                         removeitem: function (itemid) {
                             server.removefromquicklist(itemid);
                         }
                     }
                 });
-                context_quicklist.addmenu(document.id('pdfimg'));
+                context_quicklist.addmenu(Y.one('#pdfimg'));
                 context_quicklist.quickcount = 0;
                 context_quicklistnoitems();
                 quicklist = [];
 
-                if (Browser.ie6 || Browser.ie7) {
+                if (Y.UA.ie === 6 || Y.UA.ie === 7) {
                     // Hack to draw the separator line correctly in IE7 and below
                     menu = document.getElementById('context-comment');
                     items = menu.getElementsByTagName('li');
@@ -2064,7 +2057,7 @@ function uploadpdf_init(Y) {
 
                 context_comment = new ContextMenu({
                     targets: null,
-                    menu: 'context-comment',
+                    menu: '#context-comment',
                     actions: {
                         addtoquicklist: function (element) {
                             server.addtoquicklist(element);
@@ -2076,11 +2069,11 @@ function uploadpdf_init(Y) {
                         white: function (element) { updatecommentcolour('white', element); },
                         clear: function (element) { updatecommentcolour('clear', element); },
                         deletecomment: function (element) {
-                            var id = element.retrieve('id');
+                            var id = element.getData('id');
                             if (id !== -1) {
                                 server.removecomment(id);
                             }
-                            element.destroy();
+                            element.remove(true);
                         }
                     }
                 });
