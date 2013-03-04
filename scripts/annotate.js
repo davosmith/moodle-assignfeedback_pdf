@@ -498,6 +498,7 @@ function uploadpdf_init(Y) {
                     });
                     resize.after('resize:resize', function (e) {
                         newcomment.setStyle('height', '');
+                        newcomment.remove().appendTo('#pdfholder'); // Hack to get IE9 to re-wrap text properly during resize.
                     });
                     resize.after('resize:end', function (e) {
                         newcomment.setStyle('height', '');
