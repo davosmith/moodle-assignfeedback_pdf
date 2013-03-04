@@ -1,4 +1,4 @@
-/*global Events, Element, Request, Browser, ContextMenu*/ // MooTools classes
+/*global ContextMenu*/ // MooTools classes
 /*global Raphael*/
 /*global document, confirm, alert, Image, window, top, setTimeout */ // Standard Javascript elements
 /*global server_config */
@@ -1091,8 +1091,7 @@ function uploadpdf_init(Y) {
                 },
 
                 updatecomment: function (comment) {
-                    // TODO davo - remove MooTools
-                    var waitel, pageloadcount, request, status;
+                    var waitel, pageloadcount, status;
                     if (!this.editing) {
                         return;
                     }
@@ -1112,46 +1111,41 @@ function uploadpdf_init(Y) {
                     comment.appendChild(waitel);
                     comment.setData('oldcolour', comment.getData('colour'));
                     pageloadcount = this.pageloadcount;
-                    request = new Request.JSON({
-                        url: this.url,
+                    Y.io(this.url, {
                         timeout: resendtimeout,
-
-                        onSuccess: function (resp) {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            server.retrycount = 0;
-                            comment.all('.wait').remove(true);
-
-                            if (resp.error === 0) {
-                                comment.setData('id', resp.id);
-                                if (comment.getData('status') === 'needsupdate') {
-                                    comment.setData('status', 'saving');
-                                    server.updatecomment(comment); // Now we have the ID, we have another update to send off.
+                        on: {
+                            success: function (id, resp) {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                comment.all('.wait').remove(true);
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    comment.setData('status', ''); // Otherwise the new update won't get sent.
+                                    showsendfailed(function () { server.updatecomment(comment); });
+                                    return;
+                                }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    comment.setData('id', resp.id);
+                                    if (comment.getData('status') === 'needsupdate') {
+                                        comment.setData('status', 'saving');
+                                        server.updatecomment(comment); // Now we have the ID, we have another update to send off.
+                                    } else {
+                                        comment.setData('status', 'saved');
+                                    }
+                                    updatefindcomments(server.pageno.toInt(), resp.id, comment.getData('rawtext'));
                                 } else {
-                                    comment.setData('status', 'saved');
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.updatecomment(comment);
+                                    }
                                 }
-                                updatefindcomments(server.pageno.toInt(), resp.id, comment.getData('rawtext'));
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.updatecomment(comment);
-                                }
+                            },
+                            failure: function () {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                comment.setData('status', ''); // Otherwise the new update won't get sent.
+                                showsendfailed(function () { server.updatecomment(comment); });
                             }
                         },
-
-                        onFailure: function () {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            comment.all('.wait').remove(true);
-                            showsendfailed(function () { server.updatecomment(comment); });
-                        },
-
-                        onTimeout: function () {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            comment.setData('status', ''); // Otherwise the new update won't get sent.
-                            showsendfailed(function () { server.updatecomment(comment); });
-                        }
-
-                    });
-
-                    request.send({
                         data: {
                             action: 'update',
                             comment_position_x: comment.getStyle('left'),
@@ -1169,27 +1163,34 @@ function uploadpdf_init(Y) {
                 },
 
                 removecomment: function (cid) {
-                    // TODO davo - remove MooTools
+                    var pageloadcount;
                     if (!this.editing) {
                         return;
                     }
                     removefromfindcomments(cid);
-                    var request = new Request.JSON({
-                        url: this.url,
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error !== 0) {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.removecomment(cid);
+                    pageloadcount = this.pageloadcount;
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.removecomment(cid); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error !== 0) {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.removecomment(cid);
+                                    }
+                                }
+                            },
+                            failure: function () {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                showsendfailed(function () { server.removecomment(cid); });
                             }
                         },
-                        onFailure: function () {
-                            showsendfailed(function () { server.removecomment(cid); });
-                        }
-                    });
-
-                    request.send({
                         data: {
                             action: 'delete',
                             commentid: cid,
@@ -1202,179 +1203,201 @@ function uploadpdf_init(Y) {
                 },
 
                 getcomments: function () {
-                    // TODO davo - remove MooTools
                     this.waitel.removeClass('hidden');
-                    var pageno, scrolltocommentid, request;
+                    var pageno, scrolltocommentid, pageloadcount;
                     pageno = this.pageno;
                     scrolltocommentid = this.scrolltocommentid;
+                    pageloadcount = this.pageloadcount;
                     this.scrolltocommentid = 0;
 
-                    request = new Request.JSON({
-                        url: this.url,
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                server.waitel.addClass('hidden');
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.getcomments(); });
+                                    return;
+                                }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    if (pageno === server.pageno) { // Make sure the page hasn't changed since we sent this request
+                                        resp.comments.each(function (comment) { // TODO davo - check against MooTools
+                                            var cb;
+                                            cb = makecommentbox(comment.position, comment.text, comment.colour);
+                                            cb.setStyle('width', comment.width + 'px');
+                                            cb.setData('id', comment.id);
+                                        });
 
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            server.waitel.addClass('hidden');
-                            if (resp.error === 0) {
-                                if (pageno === server.pageno) { // Make sure the page hasn't changed since we sent this request
-                                    //document.id('pdfholder').getElements('div').destroy(); // Destroy all the currently displayed comments (just in case!) - this turned out to be a bad idea
-                                    resp.comments.each(function (comment) {
-                                        var cb;
-                                        cb = makecommentbox(comment.position, comment.text, comment.colour);
-                                        cb.setStyle('width', comment.width + 'px');
-                                        cb.setData('id', comment.id);
-                                    });
-
-                                    // Get annotations at the same time
-                                    allannotations.each(function (p) { p.remove(true); });
-                                    allannotations.length = 0;
-                                    resp.annotations.each(function (annotation) {
-                                        var coords, points, i;
-                                        if (annotation.type === 'freehand') {
-                                            coords = [];
-                                            points = annotation.path.split(',');
-                                            for (i = 0; (i + 1) < points.length; i += 2) {
-                                                coords.push({x: points[i].toInt(), y: points[i + 1].toInt()});
+                                        // Get annotations at the same time
+                                        allannotations.each(function (p) { p.remove(true); }); // TODO davo - check against MooTools
+                                        allannotations.length = 0;
+                                        resp.annotations.each(function (annotation) { // TODO davo - check against MooTools
+                                            var coords, points, i;
+                                            if (annotation.type === 'freehand') {
+                                                coords = [];
+                                                points = annotation.path.split(',');
+                                                for (i = 0; (i + 1) < points.length; i += 2) {
+                                                    coords.push({x: points[i].toInt(), y: points[i + 1].toInt()});
+                                                }
+                                            } else {
+                                                coords = {
+                                                    sx: annotation.coords.startx.toInt(),
+                                                    sy: annotation.coords.starty.toInt(),
+                                                    ex: annotation.coords.endx.toInt(),
+                                                    ey: annotation.coords.endy.toInt()
+                                                };
                                             }
-                                        } else {
-                                            coords = {
-                                                sx: annotation.coords.startx.toInt(),
-                                                sy: annotation.coords.starty.toInt(),
-                                                ex: annotation.coords.endx.toInt(),
-                                                ey: annotation.coords.endy.toInt()
-                                            };
-                                        }
-                                        makeline(coords, annotation.type, annotation.id, annotation.colour, annotation.path);
-                                    });
+                                            makeline(coords, annotation.type, annotation.id, annotation.colour, annotation.path);
+                                        });
 
-                                    doscrolltocomment(scrolltocommentid);
+                                        doscrolltocomment(scrolltocommentid);
+                                    }
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.getcomments();
+                                    }
                                 }
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.getcomments();
-                                }
+                            },
+
+                            failure: function () {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                showsendfailed(function () {server.getcomments(); });
+                                server.waitel.addClass('hidden');
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () {server.getcomments(); });
-                            server.waitel.addClass('hidden');
+                        data: {
+                            action: 'getcomments',
+                            id: this.id,
+                            submissionid: this.submissionid,
+                            pageno: this.pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'getcomments',
-                        id: this.id,
-                        submissionid: this.submissionid,
-                        pageno: this.pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 getquicklist: function () {
-                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
-                    var request = new Request.JSON({
-                        url: this.url,
-
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error === 0) {
-                                resp.quicklist.each(addtoquicklist);  // Assume contains: id, rawtext, colour, width
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.getquicklist();
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.getquicklist(); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    resp.quicklist.each(addtoquicklist);  // Assume contains: id, rawtext, colour, width
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.getquicklist();
+                                    }
+                                }
+                            },
+
+                            failure: function () {
+                                showsendfailed(function () { server.getquicklist(); });
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () { server.getquicklist(); });
+                        data: {
+                            action: 'getquicklist',
+                            id: this.id,
+                            submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
+                            pageno: this.pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'getquicklist',
-                        id: this.id,
-                        submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
-                        pageno: this.pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 addtoquicklist: function (element) {
-                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
-                    var request = new Request.JSON({
-                        url: this.url,
-
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error === 0) {
-                                addtoquicklist(resp.item);  // Assume contains: id, rawtext, colour, width
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.addtoquicklist(element);
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.addtoquicklist(element); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    addtoquicklist(resp.item);  // Assume contains: id, rawtext, colour, width
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.addtoquicklist(element);
+                                    }
+                                }
+                            },
+
+                            failure: function () {
+                                showsendfailed(function () { server.addtoquicklist(element); });
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () { server.addtoquicklist(element); });
+                        data: {
+                            action: 'addtoquicklist',
+                            colour: element.retrieve('colour'),
+                            text: element.retrieve('rawtext'),
+                            width: element.getStyle('width').toInt(),
+                            id: this.id,
+                            submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
+                            pageno: this.pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'addtoquicklist',
-                        colour: element.retrieve('colour'),
-                        text: element.retrieve('rawtext'),
-                        width: element.getStyle('width').toInt(),
-                        id: this.id,
-                        submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
-                        pageno: this.pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 removefromquicklist: function (itemid) {
-                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
-                    var request = new Request.JSON({
-                        url: this.url,
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error === 0) {
-                                removefromquicklist(resp.itemid);
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.removefromquicklist(itemid);
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.removefromquicklist(itemid); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    removefromquicklist(resp.itemid);
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.removefromquicklist(itemid);
+                                    }
+                                }
+                            },
+
+                            failure: function () {
+                                showsendfailed(function () { server.removefromquicklist(itemid); });
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () { server.removefromquicklist(itemid); });
+                        data: {
+                            action: 'removefromquicklist',
+                            itemid: itemid,
+                            id: this.id,
+                            submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
+                            pageno: this.pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'removefromquicklist',
-                        itemid: itemid,
-                        id: this.id,
-                        submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
-                        pageno: this.pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 getimageurl: function (pageno, changenow) {
-                    // TODO davo - remove MooTools
                     if (changenow) {
                         if ($defined(pagelist[pageno])) {
                             showpage(pageno);
@@ -1385,11 +1408,11 @@ function uploadpdf_init(Y) {
                         } else {
                             waitingforpage = pageno;
                             pagesremaining = pagestopreload; // Wanted a page that wasn't preloaded, so load a few more
-                            document.id('pdfimg').setProperty('src', server_config.blank_image);
+                            Y.one('#pdfimg').set('src', server_config.blank_image);
                         }
                     }
 
-                    var pagecount, startpage, request;
+                    var pagecount, startpage;
 
                     pagecount = server_config.pagecount.toInt();
                     if (pageno > pagecount) {
@@ -1412,52 +1435,57 @@ function uploadpdf_init(Y) {
                         }
                     }
 
-                    request = new Request.JSON({
-                        url: this.url,
-
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error === 0) {
-                                pagesremaining -= 1;
-                                pagelist[pageno] = {};
-                                pagelist[pageno].url = resp.image.url;
-                                pagelist[pageno].width = resp.image.width;
-                                pagelist[pageno].height = resp.image.height;
-                                pagelist[pageno].image = new Image(resp.image.width, resp.image.height);
-                                pagelist[pageno].image.src = resp.image.url;
-                                if (waitingforpage === pageno) {
-                                    showpage(pageno);
-                                    waitingforpage = -1;
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.getimageurl(pageno, false); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    pagesremaining -= 1;
+                                    pagelist[pageno] = {};
+                                    pagelist[pageno].url = resp.image.url;
+                                    pagelist[pageno].width = resp.image.width;
+                                    pagelist[pageno].height = resp.image.height;
+                                    pagelist[pageno].image = new Image(resp.image.width, resp.image.height);
+                                    pagelist[pageno].image.src = resp.image.url;
+                                    if (waitingforpage === pageno) {
+                                        showpage(pageno);
+                                        waitingforpage = -1;
+                                    }
 
-                                if (pagesremaining > 0) {
-                                    var nextpage = pageno.toInt() + 1;
-                                    server.getimageurl(nextpage, false);
-                                }
+                                    if (pagesremaining > 0) {
+                                        var nextpage = pageno.toInt() + 1;
+                                        server.getimageurl(nextpage, false);
+                                    }
 
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.getimageurl(pageno, false);
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.getimageurl(pageno, false);
+                                    }
                                 }
+                            },
+
+                            failure: function () {
+                                showsendfailed(function () { server.getimageurl(pageno, false); });
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () { server.getimageurl(pageno, false); });
+                        data: {
+                            action: 'getimageurl',
+                            id: this.id,
+                            submissionid: this.submissionid,
+                            pageno: pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'getimageurl',
-                        id: this.id,
-                        submissionid: this.submissionid,
-                        pageno: pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 addannotation: function (details, annotation) {
-                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
@@ -1467,35 +1495,8 @@ function uploadpdf_init(Y) {
                         details.id = -1;
                     }
 
-                    var pageloadcount, request, requestdata;
+                    var pageloadcount, requestdata;
                     pageloadcount = this.pageloadcount;
-
-                    request = new Request.JSON({
-                        url: this.url,
-
-                        onSuccess: function (resp) {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            server.retrycount = 0;
-                            server.waitel.addClass('hidden');
-
-                            if (resp.error === 0) {
-                                if (details.id < 0) { // A new line
-                                    annotation.setData('id', resp.id);
-                                }
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.addannotation(details, annotation);
-                                }
-                            }
-                        },
-
-                        onFailure: function () {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            server.waitel.addClass('hidden');
-                            showsendfailed(function () { server.addannotation(details, annotation); });
-                        }
-
-                    });
 
                     requestdata = {
                         action: 'addannotation',
@@ -1519,30 +1520,65 @@ function uploadpdf_init(Y) {
                     if (details.type === 'stamp') {
                         requestdata.annotation_path = details.path;
                     }
-                    request.send({ data: requestdata }); // Move this line down, once all working
+
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.addannotation(details, annotation); });
+                                    return;
+                                }
+                                server.retrycount = 0;
+                                server.waitel.addClass('hidden');
+                                if (resp.error === 0) {
+                                    if (details.id < 0) { // A new line
+                                        annotation.setData('id', resp.id);
+                                    }
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.addannotation(details, annotation);
+                                    }
+                                }
+                            },
+
+                            failure: function () {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                server.waitel.addClass('hidden');
+                                showsendfailed(function () { server.addannotation(details, annotation); });
+                            }
+                        },
+
+                        data: requestdata
+                    });
                 },
 
                 removeannotation: function (aid) {
-                    // TODO davo - remove MooTools
                     if (!this.editing) {
                         return;
                     }
-                    var request = new Request.JSON({
-                        url: this.url,
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error !== 0) {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.removeannotation(aid);
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                server.retrycount = 0;
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.removeannotation(aid); });
+                                    return;
                                 }
+                                if (resp.error !== 0) {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.removeannotation(aid);
+                                    }
+                                }
+                            },
+                            failure: function () {
+                                showsendfailed(function () { server.removeannotation(aid); });
                             }
                         },
-                        onFailure: function () {
-                            showsendfailed(function () { server.removeannotation(aid); });
-                        }
-                    });
-
-                    request.send({
                         data: {
                             action: 'removeannotation',
                             annotationid: aid,
@@ -1557,7 +1593,6 @@ function uploadpdf_init(Y) {
                 scrolltocomment: function (commentid) {
                     this.scrolltocommentid = commentid;
                 }
-
             };
 
             function addcomment(e) {
