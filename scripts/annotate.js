@@ -1,4 +1,4 @@
-/*global ContextMenu*/ // MooTools classes
+/*global ContextMenu*/
 /*global Raphael*/
 /*global document, confirm, alert, Image, window, top, setTimeout */ // Standard Javascript elements
 /*global server_config */
@@ -449,7 +449,7 @@ function uploadpdf_init(Y) {
 
             function makecommentbox(position, content, colour) {
                 // Create the comment box
-                var newcomment, drag, resize, mootoolsel;
+                var newcomment, drag, resize;
                 newcomment = Y.Node.create('<div><div class="content"></div></div>');
                 Y.one('#pdfholder').appendChild(newcomment);
 
