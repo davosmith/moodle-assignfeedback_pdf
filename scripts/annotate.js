@@ -5,8 +5,6 @@
 function uploadpdf_init(Y) {
     "use strict";
     Y.Get.js([
-        'scripts/mootools-core-1.4.1.js',
-        'scripts/mootools-more-1.4.0.1.js',
         'scripts/contextmenu.js',
         'scripts/raphael-min.js'],
         function () {
@@ -103,7 +101,7 @@ function uploadpdf_init(Y) {
             function updatepagenavigation(pageno) {
                 var pagecount, opennew, on_link;
                 pageno = parseInt(pageno, 10);
-                pagecount = server_config.pagecount.toInt();
+                pagecount = parseInt(server_config.pagecount, 10);
 
                 // Set the dropdown selects to have the correct page number in them
                 Y.one('#selectpage').set('value', pageno.toString());
@@ -136,7 +134,7 @@ function uploadpdf_init(Y) {
             function gotopage(pageno) {
                 var pagecount, i;
                 pageno = parseInt(pageno, 10);
-                pagecount = server_config.pagecount.toInt();
+                pagecount = parseInt(server_config.pagecount, 10);
                 if ((pageno <= pagecount) && (pageno > 0)) {
                     Y.one('#pdfholder').all('.comment').remove(true); // Remove all the currently displayed comments
                     for (i = 0; i < allannotations.length; i += 1) {
@@ -157,13 +155,13 @@ function uploadpdf_init(Y) {
             }
 
             function gotonextpage() {
-                var pageno = server.pageno.toInt();
+                var pageno = parseInt(server.pageno, 10);
                 pageno += 1;
                 gotopage(pageno);
             }
 
             function gotoprevpage() {
-                var pageno = server.pageno.toInt();
+                var pageno = parseInt(server.pageno, 10);
                 pageno -= 1;
                 gotopage(pageno);
             }
@@ -208,7 +206,7 @@ function uploadpdf_init(Y) {
                             return;
                         }
                         if (itempage > page) {
-                            menu.insertItem({text: text, value: value}, i.toInt());
+                            menu.insertItem({text: text, value: value}, parseInt(i, 10));
                             return;
                         }
                     }
@@ -855,7 +853,7 @@ function uploadpdf_init(Y) {
                 var tool, modifier, dims, sx, sy;
                 tool = getcurrenttool();
 
-                modifier = Browser.Platform.mac ? e.alt : e.control;
+                modifier = (Y.UA.os === 'macintosh') ? e.altKey : e.ctrlKey;
                 if (tool === 'comment' && !modifier) {
                     return true;
                 }
@@ -1082,7 +1080,7 @@ function uploadpdf_init(Y) {
                     this.pageno = settings.pageno;
                     this.sesskey = settings.sesskey;
                     this.url = settings.updatepage;
-                    this.editing = settings.editing.toInt();
+                    this.editing = parseInt(settings.editing, 10);
 
                     this.waitel = Y.Node.create('<div></div>');
                     this.waitel.addClass('pagewait').addClass('hidden');
@@ -1132,7 +1130,7 @@ function uploadpdf_init(Y) {
                                     } else {
                                         comment.setData('status', 'saved');
                                     }
-                                    updatefindcomments(server.pageno.toInt(), resp.id, comment.getData('rawtext'));
+                                    updatefindcomments(parseInt(server.pageno, 10), resp.id, comment.getData('rawtext'));
                                 } else {
                                     if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
                                         server.updatecomment(comment);
@@ -1223,7 +1221,7 @@ function uploadpdf_init(Y) {
                                 server.retrycount = 0;
                                 if (resp.error === 0) {
                                     if (pageno === server.pageno) { // Make sure the page hasn't changed since we sent this request
-                                        resp.comments.each(function (comment) { // TODO davo - check against MooTools
+                                        Y.Array.each(resp.comments, function (comment) {
                                             var cb;
                                             cb = makecommentbox(comment.position, comment.text, comment.colour);
                                             cb.setStyle('width', comment.width + 'px');
@@ -1231,22 +1229,22 @@ function uploadpdf_init(Y) {
                                         });
 
                                         // Get annotations at the same time
-                                        allannotations.each(function (p) { p.remove(true); }); // TODO davo - check against MooTools
+                                        Y.Array.each(allannotations, function (p) { p.remove(true); });
                                         allannotations.length = 0;
-                                        resp.annotations.each(function (annotation) { // TODO davo - check against MooTools
+                                        Y.Array.each(resp.annotations, function (annotation) {
                                             var coords, points, i;
                                             if (annotation.type === 'freehand') {
                                                 coords = [];
                                                 points = annotation.path.split(',');
                                                 for (i = 0; (i + 1) < points.length; i += 2) {
-                                                    coords.push({x: points[i].toInt(), y: points[i + 1].toInt()});
+                                                    coords.push({x: parseInt(points[i], 10), y: parseInt(points[i + 1], 10)});
                                                 }
                                             } else {
                                                 coords = {
-                                                    sx: annotation.coords.startx.toInt(),
-                                                    sy: annotation.coords.starty.toInt(),
-                                                    ex: annotation.coords.endx.toInt(),
-                                                    ey: annotation.coords.endy.toInt()
+                                                    sx: parseInt(annotation.coords.startx, 10),
+                                                    sy: parseInt(annotation.coords.starty, 10),
+                                                    ex: parseInt(annotation.coords.endx, 10),
+                                                    ey: parseInt(annotation.coords.endy, 10)
                                                 };
                                             }
                                             makeline(coords, annotation.type, annotation.id, annotation.colour, annotation.path);
@@ -1293,7 +1291,7 @@ function uploadpdf_init(Y) {
                                 }
                                 server.retrycount = 0;
                                 if (resp.error === 0) {
-                                    resp.quicklist.each(addtoquicklist);  // Assume contains: id, rawtext, colour, width
+                                    Y.Array.each(resp.quicklist, addtoquicklist);  // Assume contains: id, rawtext, colour, width
                                 } else {
                                     if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
                                         server.getquicklist();
@@ -1348,7 +1346,7 @@ function uploadpdf_init(Y) {
                             action: 'addtoquicklist',
                             colour: element.getData('colour'),
                             text: element.getData('rawtext'),
-                            width: element.getStyle('width').toInt(),
+                            width: parseInt(element.getStyle('width'), 10),
                             id: this.id,
                             submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
                             pageno: this.pageno,
@@ -1413,7 +1411,7 @@ function uploadpdf_init(Y) {
 
                     var pagecount, startpage;
 
-                    pagecount = server_config.pagecount.toInt();
+                    pagecount = parseInt(server_config.pagecount, 10);
                     if (pageno > pagecount) {
                         pageno = 1;
                     }
@@ -1458,7 +1456,7 @@ function uploadpdf_init(Y) {
                                     }
 
                                     if (pagesremaining > 0) {
-                                        var nextpage = pageno.toInt() + 1;
+                                        var nextpage = parseInt(pageno, 10) + 1;
                                         server.getimageurl(nextpage, false);
                                     }
 
@@ -1691,7 +1689,6 @@ function uploadpdf_init(Y) {
             }
 
             function doscrolltocomment(commentid) {
-                // TODO davo - remove MooTools
                 commentid = parseInt(commentid, 10);
                 if (commentid === 0) {
                     return;
@@ -1868,10 +1865,10 @@ function uploadpdf_init(Y) {
                 findcommentsmenu.on("selectedMenuItemChange", function (e) {
                     var menuval, pageno, commentid;
                     menuval = e.newValue.value;
-                    pageno = menuval.split(':')[0].toInt();
-                    commentid = menuval.split(':')[1].toInt();
+                    pageno = parseInt(menuval.split(':')[0], 10);
+                    commentid = parseInt(menuval.split(':')[1], 10);
                     if (pageno > 0) {
-                        if (server.pageno.toInt() === pageno) {
+                        if (parseInt(server.pageno, 10) === pageno) {
                             doscrolltocomment(commentid);
                         } else {
                             server.scrolltocomment(commentid);
@@ -1932,7 +1929,7 @@ function uploadpdf_init(Y) {
                 // Start preloading pages if using js navigation method
                 Y.one('document').on('keydown', keyboardnavigation);
                 pagelist = [];
-                pageno = server.pageno.toInt();
+                pageno = parseInt(server.pageno, 10);
                 // Little fix as Firefox remembers the selected option after a page refresh
                 sel = Y.one('#selectpage');
                 selpage = sel.get('value');
@@ -1977,6 +1974,10 @@ function uploadpdf_init(Y) {
                 }
                 var itemid, itemtext, itemfulltext;
                 itemid = item.id;
+                if (quicklist.hasOwnProperty(itemid)) {
+                    return; // We'v already got this (probably an extra message from the server)..
+                }
+
                 itemtext = item.text.trim().replace('\n', '');
                 itemfulltext = false;
                 if (itemtext.length > 30) {
@@ -1991,8 +1992,8 @@ function uploadpdf_init(Y) {
                     var imgpos, pos, cb, style;
                     imgpos = Y.one('#pdfimg').getXY();
                     pos = {
-                        x: menu.menu.getStyle('left').toInt() - imgpos[0] - menu.options.offsets.x,
-                        y: menu.menu.getStyle('top').toInt() - imgpos[1] - menu.options.offsets.y
+                        x: parseInt(menu.menu.getStyle('left'), 10) - imgpos[0] - menu.options.offsets.x,
+                        y: parseInt(menu.menu.getStyle('top'), 10) - imgpos[1] - menu.options.offsets.y
                     };
                     // Nasty hack to reposition the comment box in IE
                     if (Y.UA.ie) {
@@ -2082,7 +2083,7 @@ function uploadpdf_init(Y) {
             }
 
             function check_pageimage(pageno) {
-                if (pageno !== server.pageno.toInt()) {
+                if (pageno !== parseInt(server.pageno, 10)) {
                     return; // Moved off the page in question
                 }
                 if (pagelist[pageno].image.complete) {
