@@ -760,8 +760,8 @@ function uploadpdf_init(Y) {
                 var dims, ex, ey, currenttool, w, h, sx, sy, rx, ry, dx, dy, dist;
 
                 dims = get_pdf_dims();
-                ex = e.pageX - dims.left;
-                ey = e.pageY - dims.top;
+                ex = parseInt(e.pageX - dims.left, 10);
+                ey = parseInt(e.pageY - dims.top, 10);
 
                 if (ex > dims.width) {
                     ex = dims.width;
@@ -872,8 +872,8 @@ function uploadpdf_init(Y) {
                 e.preventDefault(); // Stop FF from dragging the image
 
                 dims = get_pdf_dims();
-                sx = e.pageX - dims.left;
-                sy = e.pageY - dims.top;
+                sx = parseInt(e.pageX - dims.left, 10);
+                sy = parseInt(e.pageY - dims.top, 10);
 
                 currentpaper = new Raphael(dims.left, dims.top, dims.width, dims.height);
                 Y.one('document').on('mousemove', updateline);
