@@ -5417,7 +5417,7 @@ window.Raphael.vml && function (R) {
         R.eve("remove", this);
         this.canvas.parentNode.removeChild(this.canvas);
         for (var i in this) {
-            this[i] = removed(i);
+            this[i] = null; //removed(i);
         }
         return true;
     };

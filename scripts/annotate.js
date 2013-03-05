@@ -20,6 +20,11 @@ function uploadpdf_init(Y) {
                 YH = YAHOO;
             }
 
+            if (!String.prototype.trim) {
+                // Provide 'trim' function in IE8
+                String.prototype.trim = function () { return this.replace(/^\s+|\s+$/g, ''); };
+            }
+
             currentcomment = null; // The comment that is currently being edited.
             editbox = null; // The edit box that is currently displayed.
             server = null; // The object use to send data back to the server.
