@@ -1,12 +1,10 @@
-/*global Class, Events, Element, Request, Browser, Cookie, ContextMenu*/ // MooTools classes
+/*global ContextMenu*/
 /*global Raphael*/
 /*global document, confirm, alert, Image, window, top, setTimeout */ // Standard Javascript elements
 /*global server_config */
 function uploadpdf_init(Y) {
     "use strict";
     Y.Get.js([
-        'scripts/mootools-core-1.4.1.js',
-        'scripts/mootools-more-1.4.0.1.js',
         'scripts/contextmenu.js',
         'scripts/raphael-min.js'],
         function () {
@@ -14,7 +12,7 @@ function uploadpdf_init(Y) {
             var YH, currentcomment, editbox, resizing, server, context_quicklist, context_comment, quicklist,
                 pagelist, waitingforpage, pagestopreload, pagesremaining, pageunloading, lasthighlight, colourmenu, linecolourmenu,
                 nextbutton, prevbutton, choosedrawingtool, findcommentsmenu, stampmenu, resendtimeout, currentpaper, currentline,
-                linestartpos, freehandpoints, allannotations, LINEWIDTH, HIGHLIGHT_LINEWIDTH, $defined, ServerComm;
+                linestartpos, freehandpoints, allannotations, LINEWIDTH, HIGHLIGHT_LINEWIDTH, $defined;
 
             if (typeof YAHOO === 'undefined') {
                 YH = Y.YUI2;
@@ -22,20 +20,25 @@ function uploadpdf_init(Y) {
                 YH = YAHOO;
             }
 
-            currentcomment = null; // The comment that is currently being edited
-            editbox = null; // The edit box that is currently displayed
-            resizing = false; // A box is being resized (so disable dragging)
-            server = null; // The object use to send data back to the server
+            if (!String.prototype.trim) {
+                // Provide 'trim' function in IE8
+                String.prototype.trim = function () { return this.replace(/^\s+|\s+$/g, ''); };
+            }
+
+            currentcomment = null; // The comment that is currently being edited.
+            editbox = null; // The edit box that is currently displayed.
+            server = null; // The object use to send data back to the server.
             context_quicklist = null;
             context_comment = null;
-            quicklist = null; // Stores all the comments in the quicklist
-            pagelist = []; // Stores all the data for the preloaded pages
-            waitingforpage = -1;  // Waiting for this page from the server - display as soon as it is received
-            pagestopreload = 4; // How many pages ahead to load when you hit a non-preloaded page
-            pagesremaining = pagestopreload; // How many more pages to preload before waiting
+            quicklist = null; // Stores all the comments in the quicklist.
+            pagelist = []; // Stores all the data for the preloaded pages.
+            waitingforpage = -1;  // Waiting for this page from the server - display as soon as it is received.
+            pagestopreload = 4; // How many pages ahead to load when you hit a non-preloaded page.
+            pagesremaining = pagestopreload; // How many more pages to preload before waiting.
             pageunloading = false;
-            lasthighlight = null;
+            lasthighlight = null; // The last comment highlighted via 'find comment'.
 
+            // Toolbar buttons / menus.
             colourmenu = null;
             linecolourmenu = null;
             nextbutton = null;
@@ -44,9 +47,9 @@ function uploadpdf_init(Y) {
             findcommentsmenu = null;
             stampmenu = null;
 
-            resendtimeout = 4000;
+            resendtimeout = 4000; // How long to wait before resending a comment.
 
-// All to do with line drawing
+            // All to do with line drawing.
             currentpaper = null;
             currentline = null;
             linestartpos = null;
@@ -60,8 +63,8 @@ function uploadpdf_init(Y) {
             $defined = function (obj) { return (obj !== undefined && obj !== null); };
 
             function hidesendfailed() {
-                document.id('sendagain').removeEvents();
-                document.id('sendfailed').setStyle('display', 'none');
+                Y.Event.purgeElement('#sendagain', false); // Throw away any remaining 'resend' calls.
+                Y.one('#sendfailed').setStyle('display', 'none'); // Hide the popup.
             }
 
             function showsendfailed(resend) {
@@ -77,60 +80,41 @@ function uploadpdf_init(Y) {
                     return;
                 }
 
-                var el = document.id('sendagain');
-                el.addEvent('click', resend);
-                el.addEvent('click', hidesendfailed);
-                document.id('sendfailed').setStyles({display: 'block', position: 'absolute', top: 200, left: 200, 'z-index': 9999, 'background-color': '#d0d0d0', 'border': 'black 1px solid', padding: 10});
+                Y.one('#sendagain').on('click', resend);
+                Y.one('#sendagain').on('click', hidesendfailed);
+                Y.one('#cancelsendagain').on('click', hidesendfailed);
+
+                Y.one('#sendfailed').setStyle('display', 'block');
             }
 
             function showpage(pageno) {
                 var pdfsize, style, pdfimg;
-                pdfsize = document.id('pdfsize');
-                if (Browser.ie && Browser.version < 9) {
-                    // Does not work with FF & Moodle
-                    pdfsize.setStyle('width', pagelist[pageno].width);
-                    pdfsize.setStyle('height', pagelist[pageno].height);
-                } else {
-                    // Does not work with IE
-                    style = 'height:' + pagelist[pageno].height + 'px; width:' + pagelist[pageno].width + 'px;' + ' clear: both;';
-                    pdfsize.set('style', style);
-                }
-                pdfimg = document.id('pdfimg');
-                pdfimg.setProperty('width', pagelist[pageno].width);
-                pdfimg.setProperty('height', pagelist[pageno].height);
+                pdfsize = Y.one('#pdfsize');
+                pdfsize.setStyles({width: pagelist[pageno].width + 'px', height: pagelist[pageno].height + 'px'});
+                pdfimg = Y.one('#pdfimg');
+                pdfimg.set('width', pagelist[pageno].width);
+                pdfimg.set('height', pagelist[pageno].height);
                 if (pagelist[pageno].image.complete) {
-                    pdfimg.setProperty('src', pagelist[pageno].url);
+                    pdfimg.set('src', pagelist[pageno].url);
                 } else {
-                    pdfimg.setProperty('src', server_config.blank_image);
+                    pdfimg.set('src', server_config.blank_image);
                     setTimeout(function () { check_pageimage(pageno); }, 200);
                 }
                 server.getcomments();
             }
 
             function updatepagenavigation(pageno) {
-                var pagecount, el, i, opennew, on_link;
+                var pagecount, opennew, on_link;
                 pageno = parseInt(pageno, 10);
-                pagecount = server_config.pagecount.toInt();
+                pagecount = parseInt(server_config.pagecount, 10);
 
                 // Set the dropdown selects to have the correct page number in them
-                el = document.id('selectpage');
-                for (i = 0; i < el.length; i += 1) {
-                    if (parseInt(el[i].value, 10) === pageno) {
-                        el.selectedIndex = i;
-                        break;
-                    }
-                }
-                el = document.id('selectpage2');
-                for (i = 0; i < el.length; i += 1) {
-                    if (parseInt(el[i].value, 10) === pageno) {
-                        el.selectedIndex = i;
-                        break;
-                    }
-                }
+                Y.one('#selectpage').set('value', pageno.toString());
+                Y.one('#selectpage2').set('value', pageno.toString());
 
                 if (server.editing) {
                     // Update the 'open in new window' link
-                    opennew = document.id('opennewwindow');
+                    opennew = Y.one('#opennewwindow');
                     on_link = opennew.get('href').replace(/pageno=\d+/, "pageno=" + pageno);
                     opennew.set('href', on_link);
                 }
@@ -138,28 +122,30 @@ function uploadpdf_init(Y) {
                 //Update the next/previous buttons
                 if (pageno === pagecount) {
                     nextbutton.set('disabled', true);
-                    document.id('nextpage2').set('disabled', 'disabled');
+                    Y.one('#nextpage2').set('disabled', 'disabled');
                 } else {
                     nextbutton.set('disabled', false);
-                    document.id('nextpage2').erase('disabled');
+                    Y.one('#nextpage2').removeAttribute('disabled');
                 }
                 if (pageno === 1) {
                     prevbutton.set('disabled', true);
-                    document.id('prevpage2').set('disabled', 'disabled');
+                    Y.one('#prevpage2').set('disabled', 'disabled');
                 } else {
                     prevbutton.set('disabled', false);
-                    document.id('prevpage2').erase('disabled');
+                    Y.one('#prevpage2').removeAttribute('disabled');
                 }
             }
 
             function gotopage(pageno) {
-                var pagecount;
+                var pagecount, i;
                 pageno = parseInt(pageno, 10);
-                pagecount = server_config.pagecount.toInt();
+                pagecount = parseInt(server_config.pagecount, 10);
                 if ((pageno <= pagecount) && (pageno > 0)) {
-                    document.id('pdfholder').getElements('.comment').destroy(); // Destroy all the currently displayed comments
-                    allannotations.each(function (p) { p.destroy(); });
-                    allannotations.empty();
+                    Y.one('#pdfholder').all('.comment').remove(true); // Remove all the currently displayed comments
+                    for (i = 0; i < allannotations.length; i += 1) {
+                        allannotations[i].remove(true); // Remove all the currently displayed annotations.
+                    }
+                    allannotations.length = 0; // Clear the list.
                     abortline(); // Abandon any lines currently being drawn
                     currentcomment = null; // Throw away any comments in progress
                     editbox = null;
@@ -167,36 +153,30 @@ function uploadpdf_init(Y) {
 
                     updatepagenavigation(pageno);
 
-                    server.pageno = "" + pageno;
+                    server.pageno = pageno.toString();
                     server.pageloadcount += 1;
                     server.getimageurl(pageno, true);
                 }
             }
 
             function gotonextpage() {
-                var pageno = server.pageno.toInt();
+                var pageno = parseInt(server.pageno, 10);
                 pageno += 1;
                 gotopage(pageno);
             }
 
             function gotoprevpage() {
-                var pageno = server.pageno.toInt();
+                var pageno = parseInt(server.pageno, 10);
                 pageno -= 1;
                 gotopage(pageno);
             }
 
             function selectpage() {
-                var el, idx;
-                el = document.id('selectpage');
-                idx = el.selectedIndex;
-                gotopage(el[idx].value);
+                gotopage(Y.one('#selectpage').get('value'));
             }
 
             function selectpage2() {
-                var el, idx;
-                el = document.id('selectpage2');
-                idx = el.selectedIndex;
-                gotopage(el[idx].value);
+                gotopage(Y.one('#selectpage2').get('value'));
             }
 
             function updatefindcomments(page, id, text) {
@@ -231,7 +211,7 @@ function uploadpdf_init(Y) {
                             return;
                         }
                         if (itempage > page) {
-                            menu.insertItem({text: text, value: value}, i.toInt());
+                            menu.insertItem({text: text, value: value}, parseInt(i, 10));
                             return;
                         }
                     }
@@ -266,22 +246,24 @@ function uploadpdf_init(Y) {
 
             function setcolourclass(colour, comment) {
                 if (comment) {
+                    comment.removeClass('commentred').removeClass('commentgreen').removeClass('commentblue').
+                        removeClass('commentwhite').removeClass('commentclear').removeClass('commentyellow');
                     if (colour === 'red') {
-                        comment.set('class', 'comment commentred');
+                        comment.addClass('commentred');
                     } else if (colour === 'green') {
-                        comment.set('class', 'comment commentgreen');
+                        comment.addClass('commentgreen');
                     } else if (colour === 'blue') {
-                        comment.set('class', 'comment commentblue');
+                        comment.addClass('commentblue');
                     } else if (colour === 'white') {
-                        comment.set('class', 'comment commentwhite');
+                        comment.addClass('commentwhite');
                     } else if (colour === 'clear') {
-                        comment.set('class', 'comment commentclear');
+                        comment.addClass('commentclear');
                     } else {
                         // Default: yellow comment box
-                        comment.set('class', 'comment commentyellow');
+                        comment.addClass('commentyellow');
                         colour = 'yellow';
                     }
-                    comment.store('colour', colour);
+                    comment.setData('colour', colour);
                 }
             }
 
@@ -298,11 +280,11 @@ function uploadpdf_init(Y) {
                 }
                 if (currentcomment) {
                     var col = getcurrentcolour();
-                    if (col !== currentcomment.retrieve('colour')) {
+                    if (col !== currentcomment.getData('colour')) {
                         setcolourclass(getcurrentcolour(), currentcomment);
                     }
                 }
-                Cookie.write('uploadpdf_colour', getcurrentcolour());
+                Y.Cookie.set('feedbackpdf_colour', getcurrentcolour());
             }
 
             function setcurrentcolour(colour) {
@@ -361,7 +343,7 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                if (colour !== comment.retrieve('colour')) {
+                if (colour !== comment.getData('colour')) {
                     setcolourclass(colour, comment);
                     setcurrentcolour(colour);
                     if (comment !== currentcomment) {
@@ -371,28 +353,27 @@ function uploadpdf_init(Y) {
             }
 
             function setcommentcontent(el, content) {
-                var resizehandle;
-                el.store('rawtext', content);
+                el.setData('rawtext', content);
 
                 // Replace special characters with html entities
                 content = content.replace(/</gi, '&lt;');
                 content = content.replace(/>/gi, '&gt;');
-                if (Browser.ie7) { // Grrr... no 'pre-wrap'
+                if (Y.UA.ie == 7) { // Grrr... no 'pre-wrap'
                     content = content.replace(/\n/gi, '<br/>');
                     content = content.replace(/ {2}/gi, ' &nbsp;');
                 }
-                resizehandle = el.retrieve('resizehandle');
-                el.set('html', content);
-                el.adopt(resizehandle);
+                var contentel = el.one('.content');
+                contentel.setContent(content);
             }
 
             function typingcomment(e) {
                 if (!server.editing) {
                     return;
                 }
-                if (e.key === 'esc') {
+                if (e.keyCode === 27) { // 'Esc' key pressed.
                     updatelastcomment();
-                    e.stop();
+                    e.preventDefault();
+                    e.stopPropagation();
                 }
             }
 
@@ -401,33 +382,30 @@ function uploadpdf_init(Y) {
                     return false;
                 }
                 // Stop trapping 'escape'
-                document.removeEvent('keydown', typingcomment);
+                Y.Event.detach('keydown', typingcomment, Y.one('document'));
 
-                var updated, content, id, oldcolour, newcolour;
+                var updated, content, id, oldcolour, newcolour, oldcontent;
                 updated = false;
                 content = null;
                 if (editbox !== null) {
                     content = editbox.get('value');
-                    editbox.destroy();
+                    editbox.remove(true);
                     editbox = null;
                 }
                 if (currentcomment !== null) {
                     if (content === null || (content.trim() === '')) {
-                        id = currentcomment.retrieve('id');
+                        id = currentcomment.getData('id');
                         if (id !== -1) {
                             server.removecomment(id);
                         }
-                        currentcomment.destroy();
+                        currentcomment.remove(true);
 
                     } else {
-                        oldcolour = currentcomment.retrieve('oldcolour');
-                        newcolour = currentcomment.retrieve('colour');
-                        if ((content === currentcomment.retrieve('rawtext')) && (newcolour === oldcolour)) {
-                            setcommentcontent(currentcomment, content);
-                            currentcomment.retrieve('drag').attach();
-                            // Do not update the server when the text is unchanged
-                        } else {
-                            setcommentcontent(currentcomment, content);
+                        oldcolour = currentcomment.getData('oldcolour');
+                        newcolour = currentcomment.getData('colour');
+                        oldcontent = currentcomment.getData('rawtext');
+                        setcommentcontent(currentcomment, content);
+                        if ((content !== oldcontent) || (newcolour !== oldcolour)) {
                             server.updatecomment(currentcomment);
                         }
                     }
@@ -447,41 +425,38 @@ function uploadpdf_init(Y) {
                     content = '';
                 }
 
-                editbox = new Element('textarea');
+                editbox = Y.Node.create('<textarea></textarea>');
                 editbox.set('rows', '5');
                 editbox.set('wrap', 'soft');
                 editbox.set('value', content);
-                comment.adopt(editbox);
+                comment.appendChild(editbox);
                 editbox.focus();
 
-                document.addEvent('keydown', typingcomment);
-                comment.retrieve('drag').detach(); // No dragging whilst editing (it messes up the text selection)
+                Y.one('document').on('keydown', typingcomment);
             }
 
-            function editcomment(el) {
+            function editcomment(e) {
                 if (!server.editing) {
                     return;
                 }
-                if (currentcomment === el) {
+                if (currentcomment === e.currentTarget) {
                     return;
                 }
                 updatelastcomment();
 
-                currentcomment = el;
-                var resizehandle, content;
-                resizehandle = currentcomment.retrieve('resizehandle');
-                currentcomment.set('html', '');
-                currentcomment.adopt(resizehandle);
-                content = currentcomment.retrieve('rawtext');
+                currentcomment = e.currentTarget;
+                var content;
+                currentcomment.one('.content').setContent('');
+                content = currentcomment.getData('rawtext');
                 makeeditbox(currentcomment, content);
-                setcurrentcolour(currentcomment.retrieve('colour'));
+                setcurrentcolour(currentcomment.getData('colour'));
             }
 
             function makecommentbox(position, content, colour) {
                 // Create the comment box
-                var newcomment, drag, resizehandle, resize;
-                newcomment = new Element('div');
-                document.id('pdfholder').adopt(newcomment);
+                var newcomment, drag, resize;
+                newcomment = Y.Node.create('<div><div class="content"></div></div>');
+                Y.one('#pdfholder').appendChild(newcomment);
 
                 if (position.x < 0) {
                     position.x = 0;
@@ -490,70 +465,53 @@ function uploadpdf_init(Y) {
                     position.y = 0;
                 }
 
-                if ($defined(colour)) {
+                newcomment.addClass('comment');
+                if (colour !== undefined) {
                     setcolourclass(colour, newcomment);
                 } else {
                     setcolourclass(getcurrentcolour(), newcomment);
                 }
-                newcomment.store('oldcolour', colour);
-                //newcomment.set('class', 'comment');
-                if (Browser.ie && Browser.version < 9) {
-                    // Does not work with FF & Moodle
-                    newcomment.setStyles({ left: position.x, top: position.y });
-                } else {
-                    // Does not work with IE
-                    newcomment.set('style', 'position:absolute; top:' + position.y + 'px; left:' + position.x + 'px;');
-                }
-                newcomment.store('id', -1);
+                newcomment.setData('oldcolour', colour);
+                newcomment.setStyles({ left: position.x + 'px', top: position.y + 'px', position: 'absolute'});
+                newcomment.setData('id', -1);
 
                 if (server.editing) {
                     if (context_comment) {
                         context_comment.addmenu(newcomment);
                     }
 
-                    drag = newcomment.makeDraggable({
-                        container: 'pdfholder',
-                        onCancel: editcomment, // Click without drag = edit
-                        onStart: function (el) {
-                            if (resizing) {
-                                el.retrieve('drag').stop();
-                            } else if (el.retrieve('id') === -1) {
-                                el.retrieve('drag').stop();
-                            }
-                        },
-                        onComplete: function (el) { server.updatecomment(el); }
+                    newcomment.on('click', editcomment);
+                    drag = new Y.DD.Drag({
+                        node: newcomment
                     });
-                    newcomment.store('drag', drag); // Remember the drag object so  we can switch it on later
-
-                    resizehandle = new Element('div');
-                    resizehandle.set('class', 'resizehandle');
-                    newcomment.adopt(resizehandle);
-                    resize = newcomment.makeResizable({
-                        container: 'pdfholder',
-                        handle: resizehandle,
-                        modifiers: {'x': 'width', 'y': null},
-                        onBeforeStart: function () { resizing = true; },
-                        onStart: function (el) {
-                            // Do not allow resizes on comments that have not yet
-                            // got an id from the server (except when still editing
-                            // the text, as that is OK)
-                            if (!$defined(editbox)) {
-                                if (el.retrieve('id') === -1) {
-                                    el.retrieve('resize').stop();
-                                }
-                            }
-                        },
-                        onComplete: function (el) {
-                            resizing = false;
-                            if (!$defined(editbox)) {
-                                server.updatecomment(el); // Do not update on resize when editing the text
-                            }
+                    drag.plug(Y.Plugin.DDConstrained, {
+                        constrain: '#pdfholder'
+                    });
+                    drag.on('drag:end', function (e) {
+                        if (!editbox) { // No updates whilst editing the text.
+                            server.updatecomment(newcomment);
                         }
                     });
-                    newcomment.store('resize', resize);
-                    newcomment.store('resizehandle', resizehandle);
 
                     // Add the edit box to it
+                    resize = new Y.Resize({
+                        node: newcomment,
+                        handles: 'r'
+                    });
+                    resize.plug(Y.Plugin.ResizeConstrained, {
+                        constrain: '#pdfholder'
+                    });
+                    resize.after('resize:resize', function (e) {
+                        newcomment.setStyle('height', '');
+                        newcomment.remove().appendTo('#pdfholder'); // Hack to get IE9 to re-wrap text properly during resize.
+                    });
+                    resize.after('resize:end', function (e) {
+                        newcomment.setStyle('height', '');
+                        if (!$defined(editbox)) {
+                            // Do not update the server when resizing whilst editing text.
+                            server.updatecomment(newcomment);
+                        }
+                    });
                     if ($defined(content)) {
                         setcommentcontent(newcomment, content);
                     } else {
@@ -573,8 +531,8 @@ function uploadpdf_init(Y) {
                     return;
                 }
                 if (currentline) {
-                    document.id(document).removeEvent('mousemove', updateline);
-                    document.id(document).removeEvent('mouseup', finishline);
+                    Y.Event.detach('mousemove', updateline, Y.one('document'));
+                    Y.Event.detach('mouseup', finishline, Y.one('document'));
                     if ($defined(currentpaper)) {
                         currentpaper.remove();
                         currentpaper = null;
@@ -594,8 +552,9 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                Cookie.write('uploadpdf_tool', toolname);
+                Y.Cookie.set('feedbackpdf_tool', toolname);
                 abortline(); // Just in case we are in the middle of drawing, when we change tools
+                updatelastcomment();
                 toolname += 'icon';
                 var btns, count, idx, i;
                 btns = choosedrawingtool.getButtons();
@@ -621,7 +580,7 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                Cookie.write('uploadpdf_linecolour', getcurrentlinecolour());
+                Y.Cookie.set('feedbackpdf_linecolour', getcurrentlinecolour());
             }
 
             function setcurrentlinecolour(colour) {
@@ -729,7 +688,7 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return;
                 }
-                Cookie.write('uploadpdf_stamp', getcurrentstamp());
+                Y.Cookie.set('feedbackpdf_stamp', getcurrentstamp());
                 if (e !== false) {
                     setcurrenttool('stamp');
                 }
@@ -748,24 +707,36 @@ function uploadpdf_init(Y) {
                 changestamp(settool);
             }
 
+            function get_pdf_dims() {
+                var pdf, dims;
+                pdf = Y.one('#pdfimg');
+                dims = {
+                    width: parseInt(pdf.getComputedStyle('width'), 10),
+                    height: parseInt(pdf.getComputedStyle('height'), 10),
+                    left: pdf.getX(),
+                    top: pdf.getY()
+                };
+                return dims;
+            }
+
             function finishline(e) {
                 if (!server.editing) {
                     return;
                 }
-                document.id(document).removeEvent('mousemove', updateline);
-                document.id(document).removeEvent('mouseup', finishline);
+                Y.Event.detach('mousemove', updateline, Y.one('document'));
+                Y.Event.detach('mouseup', finishline, Y.one('document'));
 
                 if (!$defined(currentpaper)) {
                     return;
                 }
 
                 var dims, coords, tool;
-                dims = document.id('pdfimg').getCoordinates();
+                dims = get_pdf_dims();
                 tool = getcurrenttool();
                 if (tool === 'freehand') {
                     coords = freehandpoints;
                 } else {
-                    coords = {sx: linestartpos.x, sy: linestartpos.y, ex: (e.page.x - dims.left), ey: (e.page.y - dims.top)};
+                    coords = {sx: linestartpos.x, sy: linestartpos.y, ex: (e.pageX - dims.left), ey: (e.pageY - dims.top)};
                     if (coords.ex > dims.width) {
                         coords.ex = dims.width;
                     }
@@ -794,9 +765,9 @@ function uploadpdf_init(Y) {
 
                 var dims, ex, ey, currenttool, w, h, sx, sy, rx, ry, dx, dy, dist;
 
-                dims = document.id('pdfimg').getCoordinates();
-                ex = e.page.x - dims.left;
-                ey = e.page.y - dims.top;
+                dims = get_pdf_dims();
+                ex = parseInt(e.pageX - dims.left, 10);
+                ey = parseInt(e.pageY - dims.top, 10);
 
                 if (ex > dims.width) {
                     ex = dims.width;
@@ -817,7 +788,7 @@ function uploadpdf_init(Y) {
                     currentline.remove();
                 } else {
                     // Doing this earlier catches the starting mouse click by mistake
-                    document.id(document).addEvent('mouseup', finishline);
+                    Y.one('document').on('mouseup', finishline);
                 }
 
                 switch (currenttool) {
@@ -877,7 +848,7 @@ function uploadpdf_init(Y) {
                 if (!server.editing) {
                     return true;
                 }
-                if (e.rightClick) {
+                if (e.button !== 1) { // Left button only
                     return true;
                 }
 
@@ -888,7 +859,7 @@ function uploadpdf_init(Y) {
                 var tool, modifier, dims, sx, sy;
                 tool = getcurrenttool();
 
-                modifier = Browser.Platform.mac ? e.alt : e.control;
+                modifier = (Y.UA.os === 'macintosh') ? e.altKey : e.ctrlKey;
                 if (tool === 'comment' && !modifier) {
                     return true;
                 }
@@ -906,18 +877,18 @@ function uploadpdf_init(Y) {
 
                 e.preventDefault(); // Stop FF from dragging the image
 
-                dims = document.id('pdfimg').getCoordinates();
-                sx = e.page.x - dims.left;
-                sy = e.page.y - dims.top;
+                dims = get_pdf_dims();
+                sx = parseInt(e.pageX - dims.left, 10);
+                sy = parseInt(e.pageY - dims.top, 10);
 
                 currentpaper = new Raphael(dims.left, dims.top, dims.width, dims.height);
-                document.id(document).addEvent('mousemove', updateline);
+                Y.one('document').on('mousemove', updateline);
                 linestartpos = {x: sx, y: sy};
                 if (tool === 'freehand') {
                     freehandpoints = [{x: linestartpos.x, y: linestartpos.y}];
                 }
                 if (tool === 'stamp') {
-                    document.id(document).addEvent('mouseup', finishline); // Click without move = default sized stamp
+                    Y.one('document').on('mouseup', finishline); // Click without move = default sized stamp
                 }
 
                 return false;
@@ -931,7 +902,7 @@ function uploadpdf_init(Y) {
                     linewidth = 0;
                 }
                 halflinewidth = linewidth * 0.5;
-                container = new Element('span');
+                container = Y.Node.create('<span></span>');
 
                 if (!$defined(colour)) {
                     colour = getcurrentlinecolour();
@@ -961,21 +932,15 @@ function uploadpdf_init(Y) {
                     if (boundary.h < 14) {
                         boundary.h = 14;
                     }
-                    if (Browser.ie && Browser.version < 9) {
-                        // Does not work with FF & Moodle
-                        container.setStyles({
-                            left: boundary.x,
-                            top: boundary.y,
-                            width: boundary.w + 2,
-                            height: boundary.h + 2,
-                            position: 'absolute'
-                        });
-                    } else {
-                        // Does not work with IE
-                        container.set('style', 'position:absolute; top:' + boundary.y + 'px; left:' + boundary.x + 'px; width:' + (boundary.w + 2) + 'px; height:' + (boundary.h + 2) + 'px;');
-                    }
-                    document.id('pdfholder').adopt(container);
-                    paper = new Raphael(container);
+                    container.setStyles({
+                        left: boundary.x + 'px',
+                        top: boundary.y + 'px',
+                        width: (boundary.w + 2) + 'px',
+                        height: (boundary.h + 2) + 'px',
+                        position: 'absolute'
+                    });
+                    Y.one('#pdfholder').appendChild(container);
+                    paper = new Raphael(container.getDOMNode());
                     minx -= halflinewidth;
                     miny -= halflinewidth;
 
@@ -1029,21 +994,15 @@ function uploadpdf_init(Y) {
                     if (boundary.h < 14) {
                         boundary.h = 14;
                     }
-                    if (Browser.ie && Browser.version < 9) {
-                        // Does not work with FF & Moodle
-                        container.setStyles({
-                            left: boundary.x,
-                            top: boundary.y,
-                            width: boundary.w + 2,
-                            height: boundary.h + 2,
-                            position: 'absolute'
-                        });
-                    } else {
-                        // Does not work with IE
-                        container.set('style', 'position:absolute; top:' + boundary.y + 'px; left:' + boundary.x + 'px; width:' + (boundary.w + 2) + 'px; height:' + (boundary.h + 2) + 'px;');
-                    }
-                    document.id('pdfholder').adopt(container);
-                    paper = new Raphael(container);
+                    container.setStyles({
+                        left: boundary.x + 'px',
+                        top: boundary.y + 'px',
+                        width: (boundary.w + 2) + 'px',
+                        height: (boundary.h + 2) + 'px',
+                        position: 'absolute'
+                    });
+                    Y.one('#pdfholder').appendChild(container);
+                    paper = new Raphael(container.getDOMNode());
                     switch (type) {
                     case 'rectangle':
                         w = Math.abs(coords.ex - coords.sx);
@@ -1086,30 +1045,29 @@ function uploadpdf_init(Y) {
                 line.attr("stroke-width", linewidth);
                 setlinecolour(colour, line, type);
 
-                domcanvas = document.id(paper.canvas);
+                domcanvas = Y.one(paper.canvas);
 
-                domcanvas.store('container', container);
-                domcanvas.store('width', boundary.w);
-                domcanvas.store('height', boundary.h);
-                domcanvas.store('line', line);
-                domcanvas.store('colour', colour);
+                domcanvas.setData('container', container);
+                domcanvas.setData('width', boundary.w);
+                domcanvas.setData('height', boundary.h);
+                domcanvas.setData('line', line);
+                domcanvas.setData('colour', colour);
                 if (server.editing) {
-                    domcanvas.addEvent('mousedown', startline);
-                    domcanvas.addEvent('click', eraseline);
+                    domcanvas.on('mousedown', startline);
+                    domcanvas.on('click', eraseline);
                     if ($defined(id)) {
-                        domcanvas.store('id', id);
+                        domcanvas.setData('id', id);
                     } else {
                         server.addannotation(details, domcanvas);
                     }
                 } else {
-                    domcanvas.store('id', id);
+                    domcanvas.setData('id', id);
                 }
 
                 allannotations.push(container);
             }
 
-            ServerComm = new Class({
-                Implements: [Events],
+            server = {
                 id: null,
                 submissionid: null,
                 pageno: null,
@@ -1128,72 +1086,77 @@ function uploadpdf_init(Y) {
                     this.pageno = settings.pageno;
                     this.sesskey = settings.sesskey;
                     this.url = settings.updatepage;
-                    this.editing = settings.editing.toInt();
+                    this.editing = parseInt(settings.editing, 10);
 
-                    this.waitel = new Element('div');
-                    this.waitel.set('class', 'pagewait hidden');
-                    document.id('pdfholder').adopt(this.waitel);
+                    this.waitel = Y.Node.create('<div></div>');
+                    this.waitel.addClass('pagewait').addClass('hidden');
+                    Y.one('#pdfholder').appendChild(this.waitel);
                 },
 
                 updatecomment: function (comment) {
+                    var waitel, pageloadcount, status;
                     if (!this.editing) {
                         return;
                     }
-                    var waitel, pageloadcount, request;
-                    waitel = new Element('div');
-                    waitel.set('class', 'wait');
-                    comment.adopt(waitel);
-                    comment.store('oldcolour', comment.retrieve('colour'));
+                    if (comment.getData('id') === -1) {
+                        // The comment does not have an ID from the server yet.
+                        status = comment.getData('status');
+                        if (status === 'saving' || status === 'needsupdate') {
+                            // Waiting for a previous update to save on the server - note the request for an update
+                            // and fire it off after this one has finished.
+                            comment.setData('status', 'needsupdate');
+                            return;
+                        }
+                        // First attempt to save this comment to the server - carry on.
+                        comment.setData('status', 'saving');
+                    }
+                    waitel = Y.Node.create('<div class="wait"></div>');
+                    comment.appendChild(waitel);
+                    comment.setData('oldcolour', comment.getData('colour'));
                     pageloadcount = this.pageloadcount;
-                    request = new Request.JSON({
-                        url: this.url,
+                    Y.io(this.url, {
                         timeout: resendtimeout,
-
-                        onSuccess: function (resp) {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            server.retrycount = 0;
-                            if (waitel.destroy !== 'undefined') { waitel.destroy(); }
-
-                            if (resp.error === 0) {
-                                comment.store('id', resp.id);
-                                // Re-attach drag and resize ability
-                                comment.retrieve('drag').attach();
-                                updatefindcomments(server.pageno.toInt(), resp.id, comment.retrieve('rawtext'));
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.updatecomment(comment);
-                                } else {
-                                    // Re-attach drag and resize ability
-                                    comment.retrieve('drag').attach();
+                        on: {
+                            success: function (id, resp) {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                comment.all('.wait').remove(true);
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    comment.setData('status', ''); // Otherwise the new update won't get sent.
+                                    showsendfailed(function () { server.updatecomment(comment); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    comment.setData('id', resp.id);
+                                    if (comment.getData('status') === 'needsupdate') {
+                                        comment.setData('status', 'saving');
+                                        server.updatecomment(comment); // Now we have the ID, we have another update to send off.
+                                    } else {
+                                        comment.setData('status', 'saved');
+                                    }
+                                    updatefindcomments(parseInt(server.pageno, 10), resp.id, comment.getData('rawtext'));
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.updatecomment(comment);
+                                    }
+                                }
+                            },
+                            failure: function () {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                comment.setData('status', ''); // Otherwise the new update won't get sent.
+                                showsendfailed(function () { server.updatecomment(comment); });
                             }
                         },
-
-                        onFailure: function () {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            if (waitel.destroy !== 'undefined') { waitel.destroy(); }
-                            showsendfailed(function () { server.updatecomment(comment); });
-                            // The following should really be on the 'cancel' (but probably unimportant)
-                            comment.retrieve('drag').attach();
-                        },
-
-                        onTimeout: function () {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            if (waitel.destroy !== 'undefined') { waitel.destroy(); }
-                            showsendfailed(function () { server.updatecomment(comment); });
-                        }
-
-                    });
-
-                    request.send({
                         data: {
                             action: 'update',
                             comment_position_x: comment.getStyle('left'),
                             comment_position_y: comment.getStyle('top'),
                             comment_width: comment.getStyle('width'),
-                            comment_text: comment.retrieve('rawtext'),
-                            comment_id: comment.retrieve('id'),
-                            comment_colour: comment.retrieve('colour'),
+                            comment_text: comment.getData('rawtext'),
+                            comment_id: comment.getData('id'),
+                            comment_colour: comment.getData('colour'),
                             id: this.id,
                             submissionid: this.submissionid,
                             pageno: this.pageno,
@@ -1203,26 +1166,34 @@ function uploadpdf_init(Y) {
                 },
 
                 removecomment: function (cid) {
+                    var pageloadcount;
                     if (!this.editing) {
                         return;
                     }
                     removefromfindcomments(cid);
-                    var request = new Request.JSON({
-                        url: this.url,
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error !== 0) {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.removecomment(cid);
+                    pageloadcount = this.pageloadcount;
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.removecomment(cid); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error !== 0) {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.removecomment(cid);
+                                    }
+                                }
+                            },
+                            failure: function () {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                showsendfailed(function () { server.removecomment(cid); });
                             }
                         },
-                        onFailure: function () {
-                            showsendfailed(function () { server.removecomment(cid); });
-                        }
-                    });
-
-                    request.send({
                         data: {
                             action: 'delete',
                             commentid: cid,
@@ -1236,178 +1207,197 @@ function uploadpdf_init(Y) {
 
                 getcomments: function () {
                     this.waitel.removeClass('hidden');
-                    var pageno, scrolltocommentid, request;
+                    var pageno, scrolltocommentid, pageloadcount;
                     pageno = this.pageno;
                     scrolltocommentid = this.scrolltocommentid;
+                    pageloadcount = this.pageloadcount;
                     this.scrolltocommentid = 0;
 
-                    request = new Request.JSON({
-                        url: this.url,
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                server.waitel.addClass('hidden');
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.getcomments(); });
+                                    return;
+                                }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    if (pageno === server.pageno) { // Make sure the page hasn't changed since we sent this request
+                                        Y.Array.each(resp.comments, function (comment) {
+                                            var cb;
+                                            cb = makecommentbox(comment.position, comment.text, comment.colour);
+                                            cb.setStyle('width', comment.width + 'px');
+                                            cb.setData('id', comment.id);
+                                        });
 
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            server.waitel.addClass('hidden');
-                            if (resp.error === 0) {
-                                if (pageno === server.pageno) { // Make sure the page hasn't changed since we sent this request
-                                    //document.id('pdfholder').getElements('div').destroy(); // Destroy all the currently displayed comments (just in case!) - this turned out to be a bad idea
-                                    resp.comments.each(function (comment) {
-                                        var cb, style;
-                                        cb = makecommentbox(comment.position, comment.text, comment.colour);
-                                        if (Browser.ie && Browser.version < 9) {
-                                            // Does not work with FF & Moodle
-                                            cb.setStyle('width', comment.width);
-                                        } else {
-                                            // Does not work with IE
-                                            style = cb.get('style') + ' width:' + comment.width + 'px;';
-                                            cb.set('style', style);
-                                        }
-
-                                        cb.store('id', comment.id);
-                                    });
-
-                                    // Get annotations at the same time
-                                    allannotations.each(function (p) { p.destroy(); });
-                                    allannotations.empty();
-                                    resp.annotations.each(function (annotation) {
-                                        var coords, points, i;
-                                        if (annotation.type === 'freehand') {
-                                            coords = [];
-                                            points = annotation.path.split(',');
-                                            for (i = 0; (i + 1) < points.length; i += 2) {
-                                                coords.push({x: points[i].toInt(), y: points[i + 1].toInt()});
+                                        // Get annotations at the same time
+                                        Y.Array.each(allannotations, function (p) { p.remove(true); });
+                                        allannotations.length = 0;
+                                        Y.Array.each(resp.annotations, function (annotation) {
+                                            var coords, points, i;
+                                            if (annotation.type === 'freehand') {
+                                                coords = [];
+                                                points = annotation.path.split(',');
+                                                for (i = 0; (i + 1) < points.length; i += 2) {
+                                                    coords.push({x: parseInt(points[i], 10), y: parseInt(points[i + 1], 10)});
+                                                }
+                                            } else {
+                                                coords = {
+                                                    sx: parseInt(annotation.coords.startx, 10),
+                                                    sy: parseInt(annotation.coords.starty, 10),
+                                                    ex: parseInt(annotation.coords.endx, 10),
+                                                    ey: parseInt(annotation.coords.endy, 10)
+                                                };
                                             }
-                                        } else {
-                                            coords = {
-                                                sx: annotation.coords.startx.toInt(),
-                                                sy: annotation.coords.starty.toInt(),
-                                                ex: annotation.coords.endx.toInt(),
-                                                ey: annotation.coords.endy.toInt()
-                                            };
-                                        }
-                                        makeline(coords, annotation.type, annotation.id, annotation.colour, annotation.path);
-                                    });
+                                            makeline(coords, annotation.type, annotation.id, annotation.colour, annotation.path);
+                                        });
 
-                                    doscrolltocomment(scrolltocommentid);
+                                        doscrolltocomment(scrolltocommentid);
+                                    }
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.getcomments();
+                                    }
                                 }
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.getcomments();
-                                }
+                            },
+
+                            failure: function () {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                showsendfailed(function () {server.getcomments(); });
+                                server.waitel.addClass('hidden');
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () {server.getcomments(); });
-                            server.waitel.addClass('hidden');
+                        data: {
+                            action: 'getcomments',
+                            id: this.id,
+                            submissionid: this.submissionid,
+                            pageno: this.pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'getcomments',
-                        id: this.id,
-                        submissionid: this.submissionid,
-                        pageno: this.pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 getquicklist: function () {
                     if (!this.editing) {
                         return;
                     }
-                    var request = new Request.JSON({
-                        url: this.url,
-
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error === 0) {
-                                resp.quicklist.each(addtoquicklist);  // Assume contains: id, rawtext, colour, width
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.getquicklist();
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.getquicklist(); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    Y.Array.each(resp.quicklist, addtoquicklist);  // Assume contains: id, rawtext, colour, width
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.getquicklist();
+                                    }
+                                }
+                            },
+
+                            failure: function () {
+                                showsendfailed(function () { server.getquicklist(); });
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () { server.getquicklist(); });
+                        data: {
+                            action: 'getquicklist',
+                            id: this.id,
+                            submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
+                            pageno: this.pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'getquicklist',
-                        id: this.id,
-                        submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
-                        pageno: this.pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 addtoquicklist: function (element) {
                     if (!this.editing) {
                         return;
                     }
-                    var request = new Request.JSON({
-                        url: this.url,
-
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error === 0) {
-                                addtoquicklist(resp.item);  // Assume contains: id, rawtext, colour, width
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.addtoquicklist(element);
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.addtoquicklist(element); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    addtoquicklist(resp.item);  // Assume contains: id, rawtext, colour, width
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.addtoquicklist(element);
+                                    }
+                                }
+                            },
+
+                            failure: function () {
+                                showsendfailed(function () { server.addtoquicklist(element); });
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () { server.addtoquicklist(element); });
+                        data: {
+                            action: 'addtoquicklist',
+                            colour: element.getData('colour'),
+                            text: element.getData('rawtext'),
+                            width: parseInt(element.getStyle('width'), 10),
+                            id: this.id,
+                            submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
+                            pageno: this.pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'addtoquicklist',
-                        colour: element.retrieve('colour'),
-                        text: element.retrieve('rawtext'),
-                        width: element.getStyle('width').toInt(),
-                        id: this.id,
-                        submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
-                        pageno: this.pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 removefromquicklist: function (itemid) {
                     if (!this.editing) {
                         return;
                     }
-                    var request = new Request.JSON({
-                        url: this.url,
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error === 0) {
-                                removefromquicklist(resp.itemid);
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.removefromquicklist(itemid);
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.removefromquicklist(itemid); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    removefromquicklist(resp.itemid);
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.removefromquicklist(itemid);
+                                    }
+                                }
+                            },
+
+                            failure: function () {
+                                showsendfailed(function () { server.removefromquicklist(itemid); });
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () { server.removefromquicklist(itemid); });
+                        data: {
+                            action: 'removefromquicklist',
+                            itemid: itemid,
+                            id: this.id,
+                            submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
+                            pageno: this.pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'removefromquicklist',
-                        itemid: itemid,
-                        id: this.id,
-                        submissionid: this.submissionid, // This and pageno are not strictly needed, but are checked for on the server
-                        pageno: this.pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 getimageurl: function (pageno, changenow) {
@@ -1421,13 +1411,13 @@ function uploadpdf_init(Y) {
                         } else {
                             waitingforpage = pageno;
                             pagesremaining = pagestopreload; // Wanted a page that wasn't preloaded, so load a few more
-                            document.id('pdfimg').setProperty('src', server_config.blank_image);
+                            Y.one('#pdfimg').set('src', server_config.blank_image);
                         }
                     }
 
-                    var pagecount, startpage, request;
+                    var pagecount, startpage;
 
-                    pagecount = server_config.pagecount.toInt();
+                    pagecount = parseInt(server_config.pagecount, 10);
                     if (pageno > pagecount) {
                         pageno = 1;
                     }
@@ -1448,48 +1438,54 @@ function uploadpdf_init(Y) {
                         }
                     }
 
-                    request = new Request.JSON({
-                        url: this.url,
-
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error === 0) {
-                                pagesremaining -= 1;
-                                pagelist[pageno] = {};
-                                pagelist[pageno].url = resp.image.url;
-                                pagelist[pageno].width = resp.image.width;
-                                pagelist[pageno].height = resp.image.height;
-                                pagelist[pageno].image = new Image(resp.image.width, resp.image.height);
-                                pagelist[pageno].image.src = resp.image.url;
-                                if (waitingforpage === pageno) {
-                                    showpage(pageno);
-                                    waitingforpage = -1;
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.getimageurl(pageno, false); });
+                                    return;
                                 }
+                                server.retrycount = 0;
+                                if (resp.error === 0) {
+                                    pagesremaining -= 1;
+                                    pagelist[pageno] = {};
+                                    pagelist[pageno].url = resp.image.url;
+                                    pagelist[pageno].width = resp.image.width;
+                                    pagelist[pageno].height = resp.image.height;
+                                    pagelist[pageno].image = new Image(resp.image.width, resp.image.height);
+                                    pagelist[pageno].image.src = resp.image.url;
+                                    if (waitingforpage === pageno) {
+                                        showpage(pageno);
+                                        waitingforpage = -1;
+                                    }
 
-                                if (pagesremaining > 0) {
-                                    var nextpage = pageno.toInt() + 1;
-                                    server.getimageurl(nextpage, false);
-                                }
+                                    if (pagesremaining > 0) {
+                                        var nextpage = parseInt(pageno, 10) + 1;
+                                        server.getimageurl(nextpage, false);
+                                    }
 
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.getimageurl(pageno, false);
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.getimageurl(pageno, false);
+                                    }
                                 }
+                            },
+
+                            failure: function () {
+                                showsendfailed(function () { server.getimageurl(pageno, false); });
                             }
                         },
 
-                        onFailure: function () {
-                            showsendfailed(function () { server.getimageurl(pageno, false); });
+                        data: {
+                            action: 'getimageurl',
+                            id: this.id,
+                            submissionid: this.submissionid,
+                            pageno: pageno,
+                            sesskey: this.sesskey
                         }
                     });
-
-                    request.send({ data: {
-                        action: 'getimageurl',
-                        id: this.id,
-                        submissionid: this.submissionid,
-                        pageno: pageno,
-                        sesskey: this.sesskey
-                    } });
                 },
 
                 addannotation: function (details, annotation) {
@@ -1502,35 +1498,8 @@ function uploadpdf_init(Y) {
                         details.id = -1;
                     }
 
-                    var pageloadcount, request, requestdata;
+                    var pageloadcount, requestdata;
                     pageloadcount = this.pageloadcount;
-
-                    request = new Request.JSON({
-                        url: this.url,
-
-                        onSuccess: function (resp) {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            server.retrycount = 0;
-                            server.waitel.addClass('hidden');
-
-                            if (resp.error === 0) {
-                                if (details.id < 0) { // A new line
-                                    annotation.store('id', resp.id);
-                                }
-                            } else {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.addannotation(details, annotation);
-                                }
-                            }
-                        },
-
-                        onFailure: function () {
-                            if (pageloadcount !== server.pageloadcount) { return; }
-                            server.waitel.addClass('hidden');
-                            showsendfailed(function () { server.addannotation(details, annotation); });
-                        }
-
-                    });
 
                     requestdata = {
                         action: 'addannotation',
@@ -1554,29 +1523,65 @@ function uploadpdf_init(Y) {
                     if (details.type === 'stamp') {
                         requestdata.annotation_path = details.path;
                     }
-                    request.send({ data: requestdata }); // Move this line down, once all working
+
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.addannotation(details, annotation); });
+                                    return;
+                                }
+                                server.retrycount = 0;
+                                server.waitel.addClass('hidden');
+                                if (resp.error === 0) {
+                                    if (details.id < 0) { // A new line
+                                        annotation.setData('id', resp.id);
+                                    }
+                                } else {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.addannotation(details, annotation);
+                                    }
+                                }
+                            },
+
+                            failure: function () {
+                                if (pageloadcount !== server.pageloadcount) { return; }
+                                server.waitel.addClass('hidden');
+                                showsendfailed(function () { server.addannotation(details, annotation); });
+                            }
+                        },
+
+                        data: requestdata
+                    });
                 },
 
                 removeannotation: function (aid) {
                     if (!this.editing) {
                         return;
                     }
-                    var request = new Request.JSON({
-                        url: this.url,
-                        onSuccess: function (resp) {
-                            server.retrycount = 0;
-                            if (resp.error !== 0) {
-                                if (confirm(server_config.lang_errormessage + resp.errmsg + '\n' + server_config.lang_okagain)) {
-                                    server.removeannotation(aid);
+                    Y.io(this.url, {
+                        on: {
+                            success: function (id, resp) {
+                                server.retrycount = 0;
+                                try {
+                                    resp = Y.JSON.parse(resp.responseText);
+                                } catch (e) {
+                                    showsendfailed(function () { server.removeannotation(aid); });
+                                    return;
                                 }
+                                if (resp.error !== 0) {
+                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                        server.removeannotation(aid);
+                                    }
+                                }
+                            },
+                            failure: function () {
+                                showsendfailed(function () { server.removeannotation(aid); });
                             }
                         },
-                        onFailure: function () {
-                            showsendfailed(function () { server.removeannotation(aid); });
-                        }
-                    });
-
-                    request.send({
                         data: {
                             action: 'removeannotation',
                             annotationid: aid,
@@ -1591,8 +1596,7 @@ function uploadpdf_init(Y) {
                 scrolltocomment: function (commentid) {
                     this.scrolltocommentid = commentid;
                 }
-
-            });
+            };
 
             function addcomment(e) {
                 if (!server.editing) {
@@ -1611,13 +1615,13 @@ function uploadpdf_init(Y) {
                 }
 
                 var modifier, imgpos, offs;
-                modifier = Browser.Platform.mac ? e.alt : e.control;
+                modifier = (Y.UA.os === 'macintosh') ? e.altKey : e.ctrlKey;
                 if (!modifier) {  // If control pressed, then drawing line
                     // Calculate the relative position of the comment
-                    imgpos = document.id('pdfimg').getPosition();
+                    imgpos = Y.one('#pdfimg').getXY();
                     offs = {
-                        x: e.page.x - imgpos.x,
-                        y: e.page.y - imgpos.y
+                        x: e.pageX - imgpos[0],
+                        y: e.pageY - imgpos[1]
                     };
                     currentcomment = makecommentbox(offs);
                 }
@@ -1631,12 +1635,16 @@ function uploadpdf_init(Y) {
                     return false;
                 }
 
-                var id, container;
-                id = this.retrieve('id');
+                var id, container, target, pos;
+                target = e.currentTarget;
+                id = target.getData('id');
                 if (id) {
-                    container = this.retrieve('container');
-                    allannotations.erase(container);
-                    container.destroy();
+                    container = target.getData('container');
+                    pos = Y.Array.indexOf(allannotations, container);
+                    if (pos !== -1) {
+                        allannotations.splice(pos, 1); // Remove from the 'allannotations' list.
+                    }
+                    container.remove(true);
                     server.removeannotation(id);
                 }
 
@@ -1648,43 +1656,36 @@ function uploadpdf_init(Y) {
                     return; // No keyboard navigation when editing comments
                 }
 
-                /*var modifier = Browser.Platform.mac ? e.alt : e.control;*/
-
-                if (e.key === 'n') {
+                if (e.keyCode === 78) { // n
                     gotonextpage();
-                } else if (e.key === 'p') {
+                } else if (e.keyCode === 80) { // p
                     gotoprevpage();
                 }
                 if (server.editing) {
-                    if (e.key === 'c') {
+                    if (e.keyCode === 67) { // c
                         setcurrenttool('comment');
-                    } else if (e.key === 'l') {
+                    } else if (e.keyCode === 76) { // l
                         setcurrenttool('line');
-                    } else if (e.key === 'r') {
+                    } else if (e.keyCode === 82) { // r
                         setcurrenttool('rectangle');
-                    } else if (e.key === 'o') {
+                    } else if (e.keyCode === 79) { // o
                         setcurrenttool('oval');
-                    } else if (e.key === 'f') {
+                    } else if (e.keyCode === 70) { // f
                         setcurrenttool('freehand');
-                    } else if (e.key === 'h') {
+                    } else if (e.keyCode === 72) { // h
                         setcurrenttool('highlight');
-                    } else if (e.key === 's') {
+                    } else if (e.keyCode === 83) { // s
                         setcurrenttool('stamp');
-                    } else if (e.key === 'e') {
+                    } else if (e.keyCode === 69) { // e
                         setcurrenttool('erase');
-                        /*} else if (e.key === 'g' && modifier) {
-                         // get this working (at some point)
-                         var btn = document.id('generateresponse');
-                         var frm = btn.parentNode;
-                         frm.submit();*/
-                    } else if (e.code === 219) {  // { or [
-                        if (e.shift) {
+                    } else if (e.keyCode === 219) {  // { or [
+                        if (e.shiftKey) {
                             prevlinecolour();
                         } else {
                             prevcommentcolour();
                         }
-                    } else if (e.code === 221) {  // } or ]
-                        if (e.shift) {
+                    } else if (e.keyCode === 221) {  // } or ]
+                        if (e.shiftKey) {
                             nextlinecolour();
                         } else {
                             nextcommentcolour();
@@ -1702,53 +1703,78 @@ function uploadpdf_init(Y) {
                     lasthighlight.removeClass('comment-highlight');
                     lasthighlight = null;
                 }
-                var comments = document.id('pdfholder').getElements('.comment');
+                var comments = Y.one('#pdfholder').all('.comment');
                 comments.each(function (comment) {
                     var dims, win, scroll, view, scrolltocoord;
 
-                    if (parseInt(comment.retrieve('id'), 10) === commentid) {
+                    if (parseInt(comment.getData('id'), 10) === commentid) {
                         comment.addClass('comment-highlight');
                         lasthighlight = comment;
 
-                        dims = comment.getCoordinates();
-                        win = window.getCoordinates();
-                        scroll = window.getScroll();
+                        dims = {
+                            left: comment.getX(),
+                            top: comment.getY(),
+                            height: parseInt(comment.getComputedStyle('height'), 10),
+                            width: parseInt(comment.getComputedStyle('width'), 10)
+                        };
+                        dims.right = dims.left + dims.width;
+                        dims.bottom = dims.top + dims.height;
+
+                        win = {
+                            left: 0,
+                            top: 0,
+                            height: window.innerHeight || document.documentElement.clientHeight ||
+                                document.getElementsByTagName('body')[0].clientHeigth,
+                            width: window.innerWidth || document.documentElement.clientWidth ||
+                                document.getElementsByTagName('body')[0].clientWidth
+                        };
+                        win.right = win.left + win.width;
+                        win.bottom = win.top + win.height;
+                        scroll = {
+                            left: (window.pageXOffset || document.body.scrollLeft),
+                            top: (window.pageYOffset || document.body.scrollTop)
+                        };
                         view = win;
-                        view.right += scroll.x;
-                        view.bottom += scroll.y;
+                        view.right += scroll.left;
+                        view.bottom += scroll.top;
+                        view.left += scroll.left;
+                        view.top += scroll.top;
 
-                        scrolltocoord = {x: scroll.x, y: scroll.y};
+                        scrolltocoord = {left: scroll.left, top: scroll.top};
 
-                        if (view.right < (dims.right + 10)) {
-                            if ((dims.width + 20) < win.width) {
+                        if (view.right < (dims.right + 30)) {
+                            if ((dims.width + 40) < win.width) {
                                 // Scroll right of comment onto the screen (if it will all fit)
-                                scrolltocoord.x = dims.right + 10 - win.width;
+                                scrolltocoord.left = dims.right + 30 - win.width;
                             } else {
                                 // Just scroll the left of the comment onto the screen
-                                scrolltocoord.x = dims.left - 10;
+                                scrolltocoord.left = dims.left - 10;
                             }
+                        } else if (view.left > (dims.left - 10)) {
+                            scrolltocoord.left = dims.left - 10;
                         }
 
-                        if (view.bottom < (dims.bottom + 10)) {
-                            if ((dims.height + 20) < win.height) {
+                        if (view.bottom < (dims.bottom + 30)) {
+                            if ((dims.height + 40) < win.height) {
                                 // Scroll bottom of comment onto the screen (if it will all fit)
-                                scrolltocoord.y = dims.bottom + 10 - win.height;
+                                scrolltocoord.top = dims.bottom + 30 - win.height;
                             } else {
                                 // Just scroll top of comment onto the screen
-                                scrolltocoord.y = dims.top - 10;
+                                scrolltocoord.top = dims.top - 10;
                             }
                         }
 
-                        window.scrollTo(scrolltocoord.x, scrolltocoord.y);
+                        window.scrollTo(scrolltocoord.left, scrolltocoord.top);
                     }
                 });
             }
 
             function startjs() {
-                server = new ServerComm(server_config);
+                server.initialize(server_config);
 
                 var showPreviousMenu, colour, linecolour, stamp, tool, pageno, sel, selidx, selpage, btn, helppanel;
 
+                // TODO davo - remove YUI2 buttons
                 if (server.editing) {
                     if (document.getElementById('choosecolour')) {
                         colourmenu = new YH.widget.Button("choosecolour", {
@@ -1822,7 +1848,9 @@ function uploadpdf_init(Y) {
                         choosedrawingtool.on("checkedButtonChange", function (e) {
                             var newtool = e.newValue.get("value");
                             newtool = newtool.substr(0, newtool.length - 4); // Strip off the 'icon' part
-                            Cookie.write('uploadpdf_tool', newtool);
+                            Y.Cookie.set('feedbackpdf_tool', newtool);
+                            abortline();
+                            updatelastcomment();
                         });
                     }
                 }
@@ -1831,10 +1859,10 @@ function uploadpdf_init(Y) {
                 prevbutton.on("click", gotoprevpage);
                 nextbutton = new YH.widget.Button("nextpage");
                 nextbutton.on("click", gotonextpage);
-                document.id('selectpage').addEvent('change', selectpage);
-                document.id('selectpage2').addEvent('change', selectpage2);
-                document.id('prevpage2').addEvent('click', gotoprevpage);
-                document.id('nextpage2').addEvent('click', gotonextpage);
+                Y.one('#selectpage').on('change', selectpage);
+                Y.one('#selectpage2').on('change', selectpage2);
+                Y.one('#prevpage2').on('click', gotoprevpage);
+                Y.one('#nextpage2').on('click', gotonextpage);
                 findcommentsmenu = new YH.widget.Button("findcommentsbutton", {
                     type: "menu",
                     menu: "findcommentsselect",
@@ -1843,10 +1871,10 @@ function uploadpdf_init(Y) {
                 findcommentsmenu.on("selectedMenuItemChange", function (e) {
                     var menuval, pageno, commentid;
                     menuval = e.newValue.value;
-                    pageno = menuval.split(':')[0].toInt();
-                    commentid = menuval.split(':')[1].toInt();
+                    pageno = parseInt(menuval.split(':')[0], 10);
+                    commentid = parseInt(menuval.split(':')[1], 10);
                     if (pageno > 0) {
-                        if (server.pageno.toInt() === pageno) {
+                        if (parseInt(server.pageno, 10) === pageno) {
                             doscrolltocomment(commentid);
                         } else {
                             server.scrolltocomment(commentid);
@@ -1858,32 +1886,30 @@ function uploadpdf_init(Y) {
                 server.getcomments();
 
                 if (server.editing) {
-                    document.id('pdfimg').addEvent('click', addcomment);
-                    document.id('pdfimg').addEvent('mousedown', startline);
-                    document.id('pdfimg').ondragstart = function () { return false; }; // To stop ie trying to drag the image
-                    colour = Cookie.read('uploadpdf_colour');
+                    Y.one('#pdfimg').on('click', addcomment);
+                    Y.one('#pdfimg').on('mousedown', startline);
+                    Y.one('#pdfimg')._node.ondragstart = function () { return false; }; // To stop ie trying to drag the image
+                    colour = Y.Cookie.get('feedbackpdf_colour');
                     if (!$defined(colour)) {
                         colour = 'yellow';
                     }
                     setcurrentcolour(colour);
-                    linecolour = Cookie.read('uploadpdf_linecolour');
+                    linecolour = Y.Cookie.get('feedbackpdf_linecolour');
                     if (!$defined(linecolour)) {
                         linecolour = 'red';
                     }
                     setcurrentlinecolour(linecolour);
-                    stamp = Cookie.read('uploadpdf_stamp');
+                    stamp = Y.Cookie.get('feedbackpdf_stamp');
                     if (!$defined(stamp) || stamp === 'null') {
                         stamp = 'tick';
                     }
                     setcurrentstamp(stamp, false);
-                    tool = Cookie.read('uploadpdf_tool');
+                    tool = Y.Cookie.get('feedbackpdf_tool');
                     if (!$defined(tool)) {
                         tool = 'comment';
                     }
                     setcurrenttool(tool);
 
-                    //content = Y.one('#annotationhelp_text');
-                    //content = content.getHTML();
                     helppanel = new Y.Panel({
                         bodyContent: Y.one('#annotationhelp_text').getHTML(),
                         headerContent: 'Help',
@@ -1907,13 +1933,12 @@ function uploadpdf_init(Y) {
                 }
 
                 // Start preloading pages if using js navigation method
-                document.addEvent('keydown', keyboardnavigation);
+                Y.one('document').on('keydown', keyboardnavigation);
                 pagelist = [];
-                pageno = server.pageno.toInt();
+                pageno = parseInt(server.pageno, 10);
                 // Little fix as Firefox remembers the selected option after a page refresh
-                sel = document.id('selectpage');
-                selidx = sel.selectedIndex;
-                selpage = sel[selidx].value;
+                sel = Y.one('#selectpage');
+                selpage = sel.get('value');
                 if (parseInt(selpage, 10) !== pageno) {
                     gotopage(selpage);
                 } else {
@@ -1921,7 +1946,10 @@ function uploadpdf_init(Y) {
                     server.getimageurl(pageno + 1, false);
                 }
 
-                window.addEvent('beforeunload', function () {
+                Y.one('window').on('unload', function (e) {
+                    pageunloading = true;
+                });
+                Y.one('window').on('beforeunload', function (e) {
                     pageunloading = true;
                 });
             }
@@ -1932,7 +1960,13 @@ function uploadpdf_init(Y) {
                 }
 
                 if (context_quicklist.quickcount === 0) {
-                    if (!context_quicklist.menu.getElement('a[href$=noitems]')) {
+                    var hasnoitems = false;
+                    context_quicklist.menu.all('a').each(function (el) {
+                        if (el.get('href').split('#')[1] === 'noitems') {
+                            hasnoitems = true;
+                        }
+                    });
+                    if (!hasnoitems) {
                         context_quicklist.addItem('noitems', server_config.lang_emptyquicklist + ' &#0133;', null, function () { alert(server_config.lang_emptyquicklist_instructions); });
                     }
                 } else {
@@ -1946,6 +1980,10 @@ function uploadpdf_init(Y) {
                 }
                 var itemid, itemtext, itemfulltext;
                 itemid = item.id;
+                if (quicklist.hasOwnProperty(itemid)) {
+                    return; // We'v already got this (probably an extra message from the server)..
+                }
+
                 itemtext = item.text.trim().replace('\n', '');
                 itemfulltext = false;
                 if (itemtext.length > 30) {
@@ -1954,34 +1992,26 @@ function uploadpdf_init(Y) {
                 }
                 itemtext = itemtext.replace('<', '&lt;').replace('>', '&gt;');
 
-
                 quicklist[itemid] = item;
 
                 context_quicklist.addItem(itemid, itemtext, server_config.deleteicon, function (id, menu) {
                     var imgpos, pos, cb, style;
-                    imgpos = document.id('pdfimg').getPosition();
+                    imgpos = Y.one('#pdfimg').getXY();
                     pos = {
-                        x: menu.menu.getStyle('left').toInt() - imgpos.x - menu.options.offsets.x,
-                        y: menu.menu.getStyle('top').toInt() - imgpos.y - menu.options.offsets.y
+                        x: parseInt(menu.menu.getStyle('left'), 10) - imgpos[0] - menu.options.offsets.x,
+                        y: parseInt(menu.menu.getStyle('top'), 10) - imgpos[1] - menu.options.offsets.y
                     };
                     // Nasty hack to reposition the comment box in IE
-                    if (Browser.ie && Browser.version < 9) {
-                        if (Browser.ie6 || Browser.ie7) {
+                    if (Y.UA.ie) {
+                        if (Y.UA.ie === 6 || Y.UA.ie === 7) {
                             pos.x += 40;
                             pos.y -= 20;
-                        } else {
+                        } else if (Y.UA.ie === 8) {
                             pos.y -= 15;
                         }
                     }
                     cb = makecommentbox(pos, quicklist[id].text, quicklist[id].colour);
-                    if (Browser.ie && Browser.version < 9) {
-                        // Does not work with FF & Moodle
-                        cb.setStyle('width', quicklist[id].width);
-                    } else {
-                        // Does not work with IE
-                        style = cb.get('style') + ' width:' + quicklist[id].width + 'px;';
-                        cb.set('style', style);
-                    }
+                    cb.setStyle('width', quicklist[id].width + 'px');
                     server.updatecomment(cb);
                 }, itemfulltext);
 
@@ -2003,25 +2033,25 @@ function uploadpdf_init(Y) {
                     return;
                 }
                 var menu, items, n;
-                document.body.grab(document.id('context-quicklist'));
-                document.body.grab(document.id('context-comment'));
+                Y.one('#context-quicklist').appendTo('body');
+                Y.one('#context-comment').appendTo('body');
 
                 //create a context menu
                 context_quicklist = new ContextMenu({
                     targets: null,
-                    menu: 'context-quicklist',
+                    menu: '#context-quicklist',
                     actions: {
                         removeitem: function (itemid) {
                             server.removefromquicklist(itemid);
                         }
                     }
                 });
-                context_quicklist.addmenu(document.id('pdfimg'));
+                context_quicklist.addmenu(Y.one('#pdfimg'));
                 context_quicklist.quickcount = 0;
                 context_quicklistnoitems();
                 quicklist = [];
 
-                if (Browser.ie6 || Browser.ie7) {
+                if (Y.UA.ie === 6 || Y.UA.ie === 7) {
                     // Hack to draw the separator line correctly in IE7 and below
                     menu = document.getElementById('context-comment');
                     items = menu.getElementsByTagName('li');
@@ -2034,7 +2064,7 @@ function uploadpdf_init(Y) {
 
                 context_comment = new ContextMenu({
                     targets: null,
-                    menu: 'context-comment',
+                    menu: '#context-comment',
                     actions: {
                         addtoquicklist: function (element) {
                             server.addtoquicklist(element);
@@ -2046,11 +2076,11 @@ function uploadpdf_init(Y) {
                         white: function (element) { updatecommentcolour('white', element); },
                         clear: function (element) { updatecommentcolour('clear', element); },
                         deletecomment: function (element) {
-                            var id = element.retrieve('id');
+                            var id = element.getData('id');
                             if (id !== -1) {
                                 server.removecomment(id);
                             }
-                            element.destroy();
+                            element.remove(true);
                         }
                     }
                 });
@@ -2059,11 +2089,11 @@ function uploadpdf_init(Y) {
             }
 
             function check_pageimage(pageno) {
-                if (pageno !== server.pageno.toInt()) {
+                if (pageno !== parseInt(server.pageno, 10)) {
                     return; // Moved off the page in question
                 }
                 if (pagelist[pageno].image.complete) {
-                    document.id('pdfimg').setProperty('src', pagelist[pageno].url);
+                    Y.one('#pdfimg').setAttribute('src', pagelist[pageno].url);
                 } else {
                     setTimeout(function () { check_pageimage(pageno); }, 200);
                 }
