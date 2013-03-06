@@ -7,4 +7,5 @@ https://github.com/davosmith/moodle-assignsubmission_pdf
 
 ==Recent changes==
 
+* 2013-03-06 - Removed the MooTools library, switching to YUI instead
 * 2013-02-13 - Fixed the positioning of the context menu
