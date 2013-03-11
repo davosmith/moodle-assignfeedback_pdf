@@ -186,10 +186,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             // Add 'annotate submission' link.
             $cm = $this->assignment->get_course_module();
             $url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('id' => $cm->id, 'submissionid' => $submission->id));
-            $returnparams = $this->assignment->get_return_params();
-            $returnparams['action'] = $this->assignment->get_return_action();
-            $returnparams = http_build_query($returnparams);
-            $url->param('returnparams', $returnparams);
+            $url->param('returnparams', $this->encode_return_params());
             $rownum = $this->get_rownum();
             if ($rownum !== false) {
                 $url->param('rownum', $rownum);
@@ -201,6 +198,14 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
 
         return '';
+    }
+
+    protected function encode_return_params() {
+        $returnparams = $this->assignment->get_return_params();
+        if ($action = $this->assignment->get_return_action()) {
+            $returnparams['action'] = $this->assignment->get_return_action();
+        }
+        return http_build_query($returnparams);
     }
 
     protected function response_link($submission) {
@@ -219,6 +224,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $cm = $this->assignment->get_course_module();
             $viewurl = new moodle_url('/mod/assign/feedback/pdf/viewcomment.php', array('id' => $cm->id,
                                                                                    'submissionid' => $submission->id));
+            $viewurl->param('returnparams', $this->encode_return_params());
             $ret = $OUTPUT->pix_icon('t/download', '').' ';
             $ret .= html_writer::link($downloadurl, get_string('downloadresponse', 'assignfeedback_pdf'));
             $ret .= html_writer::empty_tag('br');
@@ -366,7 +372,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         // Close the window (if the user clicks on 'savedraft')
         if ($enableedit && $savedraft) {
-            $this->back_to_grading();
+            redirect($this->return_url());
         }
 
         // Generate the response PDF and cose the window, if requested
@@ -393,7 +399,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                     $DB->insert_record('assign_grades', $ins);
                 }
 
-                $this->back_to_grading();
+                redirect($this->return_url());
 
             } else {
                 echo $OUTPUT->header(get_string('feedback', 'assignment').':'.format_string($this->assignment->get_instance()->name));
@@ -407,6 +413,15 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         //$PAGE->set_pagelayout('popup');
         $PAGE->set_title(get_string('feedback', 'assignment').':'.fullname($user, true).':'.format_string($assignment->name));
         $PAGE->set_heading('');
+        $returnurl = $this->return_url();
+        if ($returnurl->get_param('action') == 'grading' || $returnurl->get_param('action') == 'grade') {
+            $PAGE->navbar->add(get_string('grading', 'mod_assign'), $returnurl);
+        }
+        if ($enableedit) {
+            $PAGE->navbar->add(get_string('annotatesubmission', 'assignfeedback_pdf'));
+        } else {
+            $PAGE->navbar->add(get_string('viewresponse', 'assignfeedback_pdf'));
+        }
 
         echo $OUTPUT->header();
 
@@ -480,9 +495,9 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         echo $OUTPUT->footer();
     }
 
-    protected function back_to_grading() {
+    protected function return_url() {
         $cm = $this->assignment->get_course_module();
-        $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id, 'action' => 'grading'));
+        $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id));
         $returnparams = optional_param('returnparams', null, PARAM_TEXT);
         if (!is_null($returnparams)) {
             $returnparams = explode('&amp;', $returnparams);
@@ -491,7 +506,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 $redir->param($name, $value);
             }
         }
-        redirect($redir);
+        return $redir;
     }
 
     protected function output_controls($submission, $user, $pageno, $enableedit, $showprevious) {
