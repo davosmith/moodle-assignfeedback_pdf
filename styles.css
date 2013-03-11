@@ -7,6 +7,7 @@
     width: 120px;
     line-height: 1.3;
     white-space: pre-wrap;
+    z-index: 2;
 }
 
 .path-mod-assign-feedback-pdf .commentyellow {
@@ -64,9 +65,9 @@
 }
 
 .path-mod-assign-feedback-pdf #pdfholder .pagewait {
-    background-image: url([[pix:assignfeedback_pdf|pagewait]]);
-    width: 24px;
-    height: 24px;
+    background-image: url([[pix:moodle|i/loading]]);
+    width: 66px;
+    height: 66px;
     top: 0px;
     left: 0px;
     position: absolute;
@@ -80,7 +81,7 @@
 }
 
 .path-mod-assign-feedback-pdf .comment .wait {
-    background-image: url([[pix:assignfeedback_pdf|wait]]);
+    background-image: url([[pix:moodle|i/loading_small]]);
     width: 16px;
     height: 16px;
     top: 0px;
