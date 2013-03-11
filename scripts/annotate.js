@@ -1,15 +1,15 @@
+/*global M*/
 /*global ContextMenu*/
 /*global Raphael*/
-/*global document, confirm, alert, Image, window, top, setTimeout */ // Standard Javascript elements
-/*global server_config */
-function uploadpdf_init(Y) {
+/*global document, confirm, alert, Image, window, top, setTimeout */
+function uploadpdf_init(Y, server_config) {
     "use strict";
     Y.Get.js([
         'scripts/contextmenu.js',
         'scripts/raphael-min.js'],
         function () {
 
-            var YH, currentcomment, editbox, resizing, server, context_quicklist, context_comment, quicklist,
+            var YH, currentcomment, editbox, server, context_quicklist, context_comment, quicklist,
                 pagelist, waitingforpage, pagestopreload, pagesremaining, pageunloading, lasthighlight, colourmenu, linecolourmenu,
                 nextbutton, prevbutton, choosedrawingtool, findcommentsmenu, stampmenu, resendtimeout, currentpaper, currentline,
                 linestartpos, freehandpoints, allannotations, LINEWIDTH, HIGHLIGHT_LINEWIDTH, $defined;
@@ -233,7 +233,7 @@ function uploadpdf_init(Y) {
                         if (itemid === id) {
                             if (items.length === 1) {
                                 // Only item in list - set it to 'no comments'
-                                items[i].cfg.setProperty('text', server_config.lang_nocomments);
+                                items[i].cfg.setProperty('text', M.util.get_string('findcommentsempty', 'assignfeedback_pdf'));
                                 items[i].value = '0:0';
                             } else {
                                 menu.removeItem(items[i]);
@@ -1085,7 +1085,7 @@ function uploadpdf_init(Y) {
                     this.submissionid = settings.submissionid;
                     this.pageno = settings.pageno;
                     this.sesskey = settings.sesskey;
-                    this.url = settings.updatepage;
+                    this.url = settings.serverurl;
                     this.editing = parseInt(settings.editing, 10);
 
                     this.waitel = Y.Node.create('<div></div>');
@@ -1118,6 +1118,7 @@ function uploadpdf_init(Y) {
                         timeout: resendtimeout,
                         on: {
                             success: function (id, resp) {
+                                var msg;
                                 if (pageloadcount !== server.pageloadcount) { return; }
                                 comment.all('.wait').remove(true);
                                 try {
@@ -1138,7 +1139,9 @@ function uploadpdf_init(Y) {
                                     }
                                     updatefindcomments(parseInt(server.pageno, 10), resp.id, comment.getData('rawtext'));
                                 } else {
-                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                    msg = M.util.get_string('errormessage', 'assignfeedback_pdf') + resp.error;
+                                    msg += '\n' + M.util.get_string('okagain', 'assignfeedback_pdf');
+                                    if (confirm(msg)) {
                                         server.updatecomment(comment);
                                     }
                                 }
@@ -1175,6 +1178,7 @@ function uploadpdf_init(Y) {
                     Y.io(this.url, {
                         on: {
                             success: function (id, resp) {
+                                var msg;
                                 if (pageloadcount !== server.pageloadcount) { return; }
                                 try {
                                     resp = Y.JSON.parse(resp.responseText);
@@ -1184,7 +1188,9 @@ function uploadpdf_init(Y) {
                                 }
                                 server.retrycount = 0;
                                 if (resp.error !== 0) {
-                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                    msg = M.util.get_string('errormessage', 'assignfeedback_pdf') + resp.error + '\n';
+                                    msg += M.util.get_string('okagain', 'assignfeedback_pdf');
+                                    if (confirm(msg)) {
                                         server.removecomment(cid);
                                     }
                                 }
@@ -1216,6 +1222,7 @@ function uploadpdf_init(Y) {
                     Y.io(this.url, {
                         on: {
                             success: function (id, resp) {
+                                var msg;
                                 if (pageloadcount !== server.pageloadcount) { return; }
                                 server.waitel.addClass('hidden');
                                 try {
@@ -1259,7 +1266,9 @@ function uploadpdf_init(Y) {
                                         doscrolltocomment(scrolltocommentid);
                                     }
                                 } else {
-                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                    msg = M.util.get_string('errormessage', 'assignfeedback_pdf') + resp.error + '\n';
+                                    msg += M.util.get_string('okagain', 'assignfeedback_pdf');
+                                    if (confirm(msg)) {
                                         server.getcomments();
                                     }
                                 }
@@ -1289,6 +1298,7 @@ function uploadpdf_init(Y) {
                     Y.io(this.url, {
                         on: {
                             success: function (id, resp) {
+                                var msg;
                                 try {
                                     resp = Y.JSON.parse(resp.responseText);
                                 } catch (e) {
@@ -1299,7 +1309,9 @@ function uploadpdf_init(Y) {
                                 if (resp.error === 0) {
                                     Y.Array.each(resp.quicklist, addtoquicklist);  // Assume contains: id, rawtext, colour, width
                                 } else {
-                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                    msg = M.util.get_string('errormessage', 'assignfeedback_pdf') + resp.error + '\n';
+                                    msg += M.util.get_string('okagain', 'assignfeedback_pdf');
+                                    if (confirm(msg)) {
                                         server.getquicklist();
                                     }
                                 }
@@ -1327,6 +1339,7 @@ function uploadpdf_init(Y) {
                     Y.io(this.url, {
                         on: {
                             success: function (id, resp) {
+                                var msg;
                                 try {
                                     resp = Y.JSON.parse(resp.responseText);
                                 } catch (e) {
@@ -1337,7 +1350,9 @@ function uploadpdf_init(Y) {
                                 if (resp.error === 0) {
                                     addtoquicklist(resp.item);  // Assume contains: id, rawtext, colour, width
                                 } else {
-                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                    msg = M.util.get_string('errormessage', 'assignfeedback_pdf') + resp.error + '\n';
+                                    msg += M.util.get_string('okagain', 'assignfeedback_pdf');
+                                    if (confirm(msg)) {
                                         server.addtoquicklist(element);
                                     }
                                 }
@@ -1368,6 +1383,7 @@ function uploadpdf_init(Y) {
                     Y.io(this.url, {
                         on: {
                             success: function (id, resp) {
+                                var msg;
                                 try {
                                     resp = Y.JSON.parse(resp.responseText);
                                 } catch (e) {
@@ -1378,7 +1394,9 @@ function uploadpdf_init(Y) {
                                 if (resp.error === 0) {
                                     removefromquicklist(resp.itemid);
                                 } else {
-                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                    msg = M.util.get_string('errormessage', 'assignfeedback_pdf') + resp.error + '\n';
+                                    msg += M.util.get_string('okagain', 'assignfeedback_pdf');
+                                    if (confirm(msg)) {
                                         server.removefromquicklist(itemid);
                                     }
                                 }
@@ -1441,6 +1459,7 @@ function uploadpdf_init(Y) {
                     Y.io(this.url, {
                         on: {
                             success: function (id, resp) {
+                                var msg;
                                 try {
                                     resp = Y.JSON.parse(resp.responseText);
                                 } catch (e) {
@@ -1467,7 +1486,9 @@ function uploadpdf_init(Y) {
                                     }
 
                                 } else {
-                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                    msg = M.util.get_string('errormessage', 'assignfeedback_pdf') + resp.error + '\n';
+                                    msg += M.util.get_string('okagain', 'assignfeedback_pdf');
+                                    if (confirm(msg)) {
                                         server.getimageurl(pageno, false);
                                     }
                                 }
@@ -1527,6 +1548,7 @@ function uploadpdf_init(Y) {
                     Y.io(this.url, {
                         on: {
                             success: function (id, resp) {
+                                var msg;
                                 if (pageloadcount !== server.pageloadcount) { return; }
                                 try {
                                     resp = Y.JSON.parse(resp.responseText);
@@ -1541,7 +1563,9 @@ function uploadpdf_init(Y) {
                                         annotation.setData('id', resp.id);
                                     }
                                 } else {
-                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                    msg = M.util.get_string('errormessage', 'assignfeedback_pdf') + resp.error + '\n';
+                                    msg += M.util.get_string('okagain', 'assignfeedback_pdf');
+                                    if (confirm(msg)) {
                                         server.addannotation(details, annotation);
                                     }
                                 }
@@ -1565,6 +1589,7 @@ function uploadpdf_init(Y) {
                     Y.io(this.url, {
                         on: {
                             success: function (id, resp) {
+                                var msg;
                                 server.retrycount = 0;
                                 try {
                                     resp = Y.JSON.parse(resp.responseText);
@@ -1573,7 +1598,9 @@ function uploadpdf_init(Y) {
                                     return;
                                 }
                                 if (resp.error !== 0) {
-                                    if (confirm(server_config.lang_errormessage + resp.error + '\n' + server_config.lang_okagain)) {
+                                    msg = M.util.get_string('errormessage', 'assignfeedback_pdf') + resp.error + '\n';
+                                    msg += M.util.get_string('okagain', 'assignfeedback_pdf');
+                                    if (confirm(msg)) {
                                         server.removeannotation(aid);
                                     }
                                 }
@@ -1943,7 +1970,7 @@ function uploadpdf_init(Y) {
                     gotopage(selpage);
                 } else {
                     updatepagenavigation(pageno);
-                    server.getimageurl(pageno + 1, false);
+                    server.getimageurl(pageno, false);
                 }
 
                 Y.one('window').on('unload', function (e) {
@@ -1967,7 +1994,10 @@ function uploadpdf_init(Y) {
                         }
                     });
                     if (!hasnoitems) {
-                        context_quicklist.addItem('noitems', server_config.lang_emptyquicklist + ' &#0133;', null, function () { alert(server_config.lang_emptyquicklist_instructions); });
+                        context_quicklist.addItem('noitems', M.util.get_string('emptyquicklist', 'assignfeedback_pdf') + ' &#0133;',
+                            null, function () {
+                                alert(M.util.get_string('emptyquicklist_instructions', 'assignfeedback_pdf'));
+                            });
                     }
                 } else {
                     context_quicklist.removeItem('noitems');

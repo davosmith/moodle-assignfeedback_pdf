@@ -459,38 +459,37 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         // Definition for 'resend' box
         echo '<div id="sendfailed" style="display: none;"><p>'.get_string('servercommfailed','assignfeedback_pdf').'</p><button id="sendagain">'.get_string('resend','assignfeedback_pdf').'</button><button id="cancelsendagain">'.get_string('cancel','assignfeedback_pdf').'</button></div>';
 
-        $server = array(
+        $serverurl = new moodle_url('/mod/assign/feedback/pdf/updatecomment.php');
+        $config = array(
             'id' => $cm->id,
             'submissionid' => $submission->id,
-            'pageno' => $pageno,
             'sesskey' => sesskey(),
-            'updatepage' => $CFG->wwwroot.'/mod/assign/feedback/pdf/updatecomment.php',
-            'lang_servercommfailed' => get_string('servercommfailed', 'assignfeedback_pdf'),
-            'lang_errormessage' => get_string('errormessage', 'assignfeedback_pdf'),
-            'lang_okagain' => get_string('okagain', 'assignfeedback_pdf'),
-            'lang_emptyquicklist' => get_string('emptyquicklist', 'assignfeedback_pdf'),
-            'lang_emptyquicklist_instructions' => get_string('emptyquicklist_instructions', 'assignfeedback_pdf'),
-            'deleteicon' => $OUTPUT->pix_url('/t/delete'),
+            'pageno' => $pageno,
             'pagecount' => $pagecount,
-            'blank_image' => $CFG->wwwroot.'/mod/assign/feedback/pdf/pix/blank.gif',
+            'serverurl' => $serverurl->out(),
+            'blank_image' => $OUTPUT->pix_url('blank', 'assignfeedback_pdf')->out(),
             'image_path' => $CFG->wwwroot.'/mod/assign/feedback/pdf/pix/',
             'editing' => ($enableedit ? 1 : 0),
-            'lang_nocomments' => get_string('findcommentsempty', 'assignfeedback_pdf')
         );
 
-        echo '<script type="text/javascript">server_config = {';
-        foreach ($server as $key => $value) {
-            echo $key.": '$value', \n";
-        }
-        echo "ignore: ''\n"; // Just there so IE does not complain
-        echo '};</script>';
+        $strings = array(
+            array('servercommfailed', 'assignfeedback_pdf'),
+            array('errormessage', 'assignfeedback_pdf'),
+            array('okagain', 'assignfeedback_pdf'),
+            array('emptyquicklist', 'assignfeedback_pdf'),
+            array('emptyquicklist_instructions', 'assignfeedback_pdf'),
+            array('findcommentsempty', 'assignfeedback_pdf')
+        );
 
         $jsmodule = array('name' => 'assignfeedback_pdf',
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
-                          'requires' => array('get', 'button', 'overlay', 'dd-drag', 'dd-constrain',  'resize',
-                                              'resize-plugin', 'cookie', 'io-base', 'json', 'yui2-yahoo-dom-event', 'yui2-container',
-                                              'yui2-element', 'yui2-button', 'yui2-menu', 'yui2-utilities', 'panel'));
-        $PAGE->requires->js_init_call('uploadpdf_init', array(), true, $jsmodule);
+                          'requires' => array('get', 'button', 'overlay', 'dd-drag', 'dd-constrain',
+                                              'resize-plugin', 'cookie', 'io-base', 'json', 'panel',
+                                              'yui2-yahoo-dom-event', 'yui2-container',
+                                              'yui2-element', 'yui2-button', 'yui2-menu', 'yui2-utilities'),
+                          'strings' => $strings,
+        );
+        $PAGE->requires->js_init_call('uploadpdf_init', array($config), true, $jsmodule);
 
         echo $OUTPUT->footer();
     }
