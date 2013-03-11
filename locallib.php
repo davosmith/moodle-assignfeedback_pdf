@@ -459,6 +459,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         // Definition for 'resend' box
         echo '<div id="sendfailed" style="display: none;"><p>'.get_string('servercommfailed','assignfeedback_pdf').'</p><button id="sendagain">'.get_string('resend','assignfeedback_pdf').'</button><button id="cancelsendagain">'.get_string('cancel','assignfeedback_pdf').'</button></div>';
 
+        // Prepare all the parameters to pass into the javascript.
         $serverurl = new moodle_url('/mod/assign/feedback/pdf/updatecomment.php');
         $config = array(
             'id' => $cm->id,
@@ -472,6 +473,18 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             'editing' => ($enableedit ? 1 : 0),
         );
 
+        $preferences = array(
+            'colour' => 'yellow',
+            'linecolour' => 'red',
+            'stamp' => 'tick',
+            'tool' => 'comment'
+        );
+        $userpreferences = array();
+        foreach ($preferences as $preference => $default) {
+            $userpreferences[$preference] = get_user_preferences("assignfeedback_pdf_{$preference}", $default);
+            user_preference_allow_ajax_update("assignfeedback_pdf_{$preference}", PARAM_ALPHA);
+        }
+
         $strings = array(
             array('servercommfailed', 'assignfeedback_pdf'),
             array('errormessage', 'assignfeedback_pdf'),
@@ -484,12 +497,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $jsmodule = array('name' => 'assignfeedback_pdf',
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
                           'requires' => array('get', 'button', 'overlay', 'dd-drag', 'dd-constrain',
-                                              'resize-plugin', 'cookie', 'io-base', 'json', 'panel',
+                                              'resize-plugin', 'io-base', 'json', 'panel',
                                               'yui2-yahoo-dom-event', 'yui2-container',
                                               'yui2-element', 'yui2-button', 'yui2-menu', 'yui2-utilities'),
                           'strings' => $strings,
         );
-        $PAGE->requires->js_init_call('uploadpdf_init', array($config), true, $jsmodule);
+        $PAGE->requires->js_init_call('uploadpdf_init', array($config, $userpreferences), true, $jsmodule);
 
         echo $OUTPUT->footer();
     }

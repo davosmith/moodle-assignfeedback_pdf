@@ -2,7 +2,7 @@
 /*global ContextMenu*/
 /*global Raphael*/
 /*global document, confirm, alert, Image, window, top, setTimeout */
-function uploadpdf_init(Y, server_config) {
+function uploadpdf_init(Y, server_config, userpreferences) {
     "use strict";
     Y.Get.js([
         'scripts/contextmenu.js',
@@ -284,7 +284,7 @@ function uploadpdf_init(Y, server_config) {
                         setcolourclass(getcurrentcolour(), currentcomment);
                     }
                 }
-                Y.Cookie.set('feedbackpdf_colour', getcurrentcolour());
+                M.util.set_user_preference('assignfeedback_pdf_colour', getcurrentcolour());
             }
 
             function setcurrentcolour(colour) {
@@ -552,7 +552,7 @@ function uploadpdf_init(Y, server_config) {
                 if (!server.editing) {
                     return;
                 }
-                Y.Cookie.set('feedbackpdf_tool', toolname);
+                M.util.set_user_preference('assignfeedback_pdf_tool', toolname);
                 abortline(); // Just in case we are in the middle of drawing, when we change tools
                 updatelastcomment();
                 toolname += 'icon';
@@ -580,7 +580,7 @@ function uploadpdf_init(Y, server_config) {
                 if (!server.editing) {
                     return;
                 }
-                Y.Cookie.set('feedbackpdf_linecolour', getcurrentlinecolour());
+                M.util.set_user_preference('assignfeedback_pdf_linecolour', getcurrentlinecolour());
             }
 
             function setcurrentlinecolour(colour) {
@@ -688,7 +688,7 @@ function uploadpdf_init(Y, server_config) {
                 if (!server.editing) {
                     return;
                 }
-                Y.Cookie.set('feedbackpdf_stamp', getcurrentstamp());
+                M.util.set_user_preference('assignfeedback_pdf_stamp', getcurrentstamp());
                 if (e !== false) {
                     setcurrenttool('stamp');
                 }
@@ -1875,7 +1875,7 @@ function uploadpdf_init(Y, server_config) {
                         choosedrawingtool.on("checkedButtonChange", function (e) {
                             var newtool = e.newValue.get("value");
                             newtool = newtool.substr(0, newtool.length - 4); // Strip off the 'icon' part
-                            Y.Cookie.set('feedbackpdf_tool', newtool);
+                            M.util.set_user_preference('assignfeedback_pdf_tool', newtool);
                             abortline();
                             updatelastcomment();
                         });
@@ -1916,26 +1916,10 @@ function uploadpdf_init(Y, server_config) {
                     Y.one('#pdfimg').on('click', addcomment);
                     Y.one('#pdfimg').on('mousedown', startline);
                     Y.one('#pdfimg')._node.ondragstart = function () { return false; }; // To stop ie trying to drag the image
-                    colour = Y.Cookie.get('feedbackpdf_colour');
-                    if (!$defined(colour)) {
-                        colour = 'yellow';
-                    }
-                    setcurrentcolour(colour);
-                    linecolour = Y.Cookie.get('feedbackpdf_linecolour');
-                    if (!$defined(linecolour)) {
-                        linecolour = 'red';
-                    }
-                    setcurrentlinecolour(linecolour);
-                    stamp = Y.Cookie.get('feedbackpdf_stamp');
-                    if (!$defined(stamp) || stamp === 'null') {
-                        stamp = 'tick';
-                    }
-                    setcurrentstamp(stamp, false);
-                    tool = Y.Cookie.get('feedbackpdf_tool');
-                    if (!$defined(tool)) {
-                        tool = 'comment';
-                    }
-                    setcurrenttool(tool);
+                    setcurrentcolour(userpreferences.colour);
+                    setcurrentlinecolour(userpreferences.linecolour);
+                    setcurrentstamp(userpreferences.stamp, false);
+                    setcurrenttool(userpreferences.tool);
 
                     helppanel = new Y.Panel({
                         bodyContent: Y.one('#annotationhelp_text').getHTML(),
