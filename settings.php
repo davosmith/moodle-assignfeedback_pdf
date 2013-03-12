@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -16,19 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information
+ * Settings for assignfeedback PDF plugin
  *
- * @package    assignfeedback_pdf
- * @copyright  2012 Davo Smith
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   assignfeedback_pdf
+ * @copyright 2013 Davo Smith
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2013031201;
-$plugin->release   = "2.3+ (Build 2013031201)";
-$plugin->requires  = 2012062500;
-$plugin->component = 'assignfeedback_pdf';
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->cron      = 60;
-$plugin->dependencies = array('assignsubmission_pdf' => 2013031201);
+$settings->add(new admin_setting_configtext('assignfeedback_pdf/gspath',
+                                            get_string('gspath', 'assignfeedback_pdf'),
+                                            get_string('gspath2', 'assignfeedback_pdf'), 'gs'));
+

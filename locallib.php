@@ -822,7 +822,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     protected function get_page_image($pageno, $submission) {
         global $CFG, $DB;
 
-        require_once($CFG->dirroot.'/mod/assign/submission/pdf/mypdflib.php');
+        require_once($CFG->dirroot.'/mod/assign/feedback/pdf/mypdflib.php');
         require_once($CFG->dirroot.'/mod/assign/submission/pdf/lib.php');
 
         $pagefilename = 'page'.$pageno.'.png';
