@@ -26,5 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 $settings->add(new admin_setting_configtext('assignfeedback_pdf/gspath',
                                             get_string('gspath', 'assignfeedback_pdf'),
-                                            get_string('gspath2', 'assignfeedback_pdf'), 'gs'));
+                                            get_string('gspath2', 'assignfeedback_pdf'), '/usr/bin/gs'));
 
+$url = new moodle_url('/mod/assign/feedback/pdf/testgs.php');
+$link = html_writer::link($url, get_string('testgs', 'assignfeedback_pdf'));
+$settings->add(new admin_setting_heading('testgs', '', $link));

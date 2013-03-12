@@ -43,6 +43,14 @@ class AssignPDFLib extends FPDI {
     /** @var string the path to the PDF currently being processed */
     protected $filename = null;
 
+    const GSPATH_OK = 'ok';
+    const GSPATH_EMPTY = 'empty';
+    const GSPATH_DOESNOTEXIST = 'doesnotexist';
+    const GSPATH_ISDIR = 'isdir';
+    const GSPATH_NOTEXECUTABLE = 'notexecutable';
+    const GSPATH_NOTESTFILE = 'notestfile';
+    const GSPATH_ERROR = 'error';
+
     /**
      * Combine the given PDF files into a single PDF. Optionally add a coversheet and coversheet fields.
      * @param $pdflist string[] the filenames of the files to combine
@@ -507,6 +515,67 @@ class AssignPDFLib extends FPDI {
         @unlink($tempdst);
 
         return true;
+    }
+
+    public static function test_gs_path($generateimage = true) {
+        global $CFG;
+
+        $ret = (object)array(
+            'status' => self::GSPATH_OK,
+            'message' => null,
+        );
+        $gspath = get_config('assignfeedback_pdf', 'gspath');
+        if (empty($gspath)) {
+            $ret->status = self::GSPATH_EMPTY;
+            return $ret;
+        }
+        if (!file_exists($gspath)) {
+            $ret->status = self::GSPATH_DOESNOTEXIST;
+            return $ret;
+        }
+        if (is_dir($gspath)) {
+            $ret->status = self::GSPATH_ISDIR;
+            return $ret;
+        }
+        if (!is_executable($gspath)) {
+            $ret->status = self::GSPATH_NOTEXECUTABLE;
+            return $ret;
+        }
+
+        $testfile = $CFG->dirroot.'/mod/assign/feedback/pdf/testgs.pdf';
+        if (!file_exists($testfile)) {
+            $ret->status = self::GSPATH_NOTESTFILE;
+            return $ret;
+        }
+
+        if (!$generateimage) {
+            return $ret;
+        }
+
+        $testimagefolder = $CFG->dataroot.'/temp/assignfeedback_pdf_test';
+        @unlink($testimagefolder.'/image_page1.png'); // Delete any previous test images.
+        check_dir_exists($testimagefolder, true, true);
+
+        $pdf = new AssignPDFLib();
+        $pdf->set_pdf($testfile);
+        $pdf->set_image_folder($testimagefolder);
+        try {
+            $pdf->get_image(1);
+        } catch (moodle_exception $e) {
+            $ret->status = self::GSPATH_ERROR;
+            $ret->message = $e->getMessage();
+        }
+
+        return $ret;
+    }
+
+    public static function send_test_image() {
+        global $CFG;
+        header('Content-type: image/png');
+        $testimagefolder = $CFG->dataroot.'/temp/assignfeedback_pdf_test';
+        $testimage = $testimagefolder.'/image_page1.png';
+        @readfile($testimage);
+        die();
     }
 }
 
