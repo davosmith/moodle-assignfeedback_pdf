@@ -57,8 +57,12 @@ $feedbackpdf = new assign_feedback_pdf($assignment, 'feedback_pdf');
 
 if ($action == 'showprevious') {
     $feedbackpdf->show_previous_comments($submissionid);
-} elseif ($action == 'showpreviouspage') {
+} else if ($action == 'showpreviouspage') {
     $feedbackpdf->edit_comment_page($submissionid, $pageno, false);
+} else if ($action == 'clearcache') {
+    $feedbackpdf->clear_image_cache($submissionid, optional_param('nextaction', null, PARAM_ALPHA));
+} else if ($action == 'browseimages') {
+    $feedbackpdf->browse_images($submissionid, $pageno);
 } else {
     $feedbackpdf->edit_comment_page($submissionid, $pageno);
 }

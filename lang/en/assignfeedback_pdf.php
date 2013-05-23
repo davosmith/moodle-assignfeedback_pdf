@@ -52,6 +52,7 @@ $string['annotationhelp_text'] = '<table>
  </table>';
 $string['backtocommentlist'] = 'Back to comment list';
 $string['cancel'] = 'Cancel';
+$string['clearimagecache'] = 'Clear page image cache';
 $string['colourred'] = 'Red';
 $string['colouryellow'] = 'Yellow';
 $string['colourgreen'] = 'Green';

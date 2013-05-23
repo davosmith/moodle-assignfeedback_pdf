@@ -1471,4 +1471,55 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $lastcron = time(); // Remember when the last cron job ran
         set_config('lastcron', $lastcron, 'assignfeedback_pdf');
     }
+
+    public function clear_image_cache($submissionid, $nextaction) {
+        global $PAGE;
+
+        $context = $this->assignment->get_context();
+        $fs = get_file_storage();
+        $fs->delete_area_files($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_IMAGE, $submissionid);
+
+        $redir = new moodle_url($PAGE->url);
+        if ($nextaction) {
+            $redir->param('action', $nextaction);
+        }
+        redirect($redir);
+    }
+
+    public function browse_images($submissionid, $pageno) {
+        global $DB, $OUTPUT, $PAGE;
+
+        $assignment = $this->assignment->get_instance();
+        $params = array('id' => $submissionid, 'assignment' => $assignment->id);
+        $submission = $DB->get_record('assign_submission', $params, '*', MUST_EXIST);
+        $params = array('assignment' => $assignment->id, 'submission' => $submission->id);
+        $submissionpdf = $DB->get_record('assignsubmission_pdf', $params, '*', MUST_EXIST);
+        $submission->numpages = $submissionpdf->numpages;
+
+        list($imageurl, $imgwidth, $imgheight, $pagecount) = $this->get_page_image($pageno, $submission);
+        $baseurl = new moodle_url($PAGE->url, array('action' => 'browseimages'));
+        $clearurl = new moodle_url($PAGE->url, array('action' => 'clearcache', 'nextaction' => 'browseimages'));
+
+        $PAGE->set_pagelayout('embedded');
+
+        echo $OUTPUT->header();
+        $paging = '';
+        for ($i=1; $i<=$pagecount; $i++) {
+            if ($pageno != $i) {
+                $pageurl = new moodle_url($baseurl, array('pageno' => $i));
+                $paging .= html_writer::link($pageurl, $i).' ';
+            } else {
+                $paging .= $i.' ';
+            }
+        }
+        echo html_writer::tag('p', $paging);
+
+        echo html_writer::tag('p', html_writer::link($clearurl, get_string('clearimagecache', 'assignfeedback_pdf')));
+
+        echo html_writer::empty_tag('img', array('src' => $imageurl, 'width' => $imgwidth, 'height' => $imgheight));
+
+        echo html_writer::empty_tag('br');
+
+        echo $OUTPUT->footer();
+    }
 }

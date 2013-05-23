@@ -25,8 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2013032500;
-$plugin->release   = "2.3+ (Build 2013032500)";
+$plugin->version   = 2013052300;
+$plugin->release   = "2.3+ (Build 2013052300)";
 $plugin->requires  = 2012062500;
 $plugin->component = 'assignfeedback_pdf';
 $plugin->maturity  = MATURITY_STABLE;
