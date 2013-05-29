@@ -571,7 +571,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $jsmodule = array('name' => 'assignfeedback_pdf',
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
                           'requires' => array('get', 'button', 'overlay', 'dd-drag', 'dd-constrain',
-                                              'resize-plugin', 'io-base', 'json', 'panel',
+                                              'resize-plugin', 'io-base', 'json', 'panel', 'button-plugin',
+                                              'button-group',
                                               'yui2-yahoo-dom-event', 'yui2-container',
                                               'yui2-element', 'yui2-button', 'yui2-menu', 'yui2-utilities'),
                           'strings' => $strings,
@@ -605,18 +606,19 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         if ($enableedit) {
             // Save draft / generate response buttons
             $saveopts .= html_writer::start_tag('form', array('action' => $PAGE->url->out_omit_querystring(),
-                                                            'method' => 'post', 'target' => '_top'));
+                                                             'method' => 'post', 'target' => '_top'));
             $saveopts .= html_writer::input_hidden_params($PAGE->url);
-            $img = $OUTPUT->pix_icon('savequit', '', 'assignfeedback_pdf');
-            $saveopts .= html_writer::tag('button', $img, array('type' => 'submit', 'name' => 'savedraft',
-                                                               'value' => 'savedraft', 'id' => 'savedraft',
-                                                               'title' => get_string('savedraft', 'assignfeedback_pdf')));
+            $saveopts .= html_writer::empty_tag('input', array('type' => 'image', 'name' => 'savedraft',
+                                                              'value' => 'savedraft', 'id' => 'savedraft',
+                                                              'src' => $OUTPUT->pix_url('savequit', 'assignfeedback_pdf'),
+                                                              'title' => get_string('savedraft', 'assignfeedback_pdf')));
             $saveopts .= "\n";
-            $img = $OUTPUT->pix_icon('tostudent', '', 'assignfeedback_pdf');
-            $saveopts .= html_writer::tag('button', $img, array('type' => 'submit', 'name' => 'generateresponse',
-                                                               'value' => 'generateresponse', 'id' => 'generateresponse',
-                                                               'title' => get_string('generateresponse', 'assignfeedback_pdf')));
+            $saveopts .= html_writer::empty_tag('input', array('type' => 'image', 'name' => 'generateresponse',
+                                                              'value' => 'generateresponse', 'id' => 'generateresponse',
+                                                              'src' => $OUTPUT->pix_url('tostudent', 'assignfeedback_pdf'),
+                                                              'title' => get_string('generateresponse', 'assignfeedback_pdf')));
             $saveopts .= "\n";
+            $saveopts .= html_writer::end_tag('form');
         }
 
         // 'Download original' button
@@ -627,12 +629,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $pdfurl = moodle_url::make_pluginfile_url($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE,
                                                       $submission->id, $this->get_subfolder(), ASSIGNFEEDBACK_PDF_FILENAME, true);
         }
-        $img = $OUTPUT->pix_icon('download', $downloadorig, 'assignfeedback_pdf');
-        $saveopts .= html_writer::link($pdfurl, $img, array('id' => 'downloadpdf', 'title' => $downloadorig,
-                                                           'alt' => $downloadorig));
-        if ($enableedit) {
-            $saveopts .= html_writer::end_tag('form');
-        }
+        $saveopts .= html_writer::start_tag('form', array('method' => 'get', 'action' => $pdfurl->out()));
+        $saveopts .= html_writer::input_hidden_params($pdfurl);
+        $saveopts .= html_writer::empty_tag('input', array('type' => 'image', 'name' => 'downloadpdf', 'id' => 'downloadpdf',
+                                                          'src' => $OUTPUT->pix_url('download', 'assignfeedback_pdf'),
+                                                          'title' => $downloadorig, 'alt' => $downloadorig));
+        $saveopts .= html_writer::end_tag('form');
 
         // Show previous assignment
         if ($enableedit && $user) {
@@ -757,7 +759,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
         $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
         $list = html_writer::tag('div', $list, array('class' => 'bd'));
-        $list = html_writer::tag('div', $list, array('id' => 'choosecolourmenu', 'class' => 'yuimenu',
+        $list = html_writer::tag('div', $list, array('id' => 'choosecolourmenu',
+                                                    'class' => 'yuimenu yui-overlay yui-overlay-hidden',
                                                     'title' => $titlestr));
         $tools .= $list;
 
@@ -774,7 +777,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
         $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
         $list = html_writer::tag('div', $list, array('class' => 'bd'));
-        $list = html_writer::tag('div', $list, array('id' => 'chooselinecolourmenu', 'class' => 'yuimenu',
+        $list = html_writer::tag('div', $list, array('id' => 'chooselinecolourmenu',
+                                                    'class' => 'yuimenu yui-overlay yui-overlay-hidden',
                                                     'title' => $titlestr));
         $tools .= $list;
 
@@ -792,23 +796,20 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         }
         $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
         $list = html_writer::tag('div', $list, array('class' => 'bd'));
-        $list = html_writer::tag('div', $list, array('id' => 'choosestampmenu', 'class' => 'yuimenu',
+        $list = html_writer::tag('div', $list, array('id' => 'choosestampmenu',
+                                                    'class' => 'yuimenu yui-overlay yui-overlay-hidden',
                                                     'title' => $titlestr));
         $tools .= $list;
 
         // Choose annotation type.
         $drawingtools = array('commenticon','lineicon','rectangleicon','ovalicon','freehandicon','highlighticon','stampicon','eraseicon');
-        $checked = ' yui-button-checked';
         $list = '';
         foreach ($drawingtools as $drawingtool) {
             $item = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url($drawingtool, 'assignfeedback_pdf')));
             $item = html_writer::tag('button', $item, array('name' => 'choosetoolradio', 'value' => $drawingtool,
+                                                           'id' => $drawingtool,
                                                            'title' => get_string($drawingtool, 'assignfeedback_pdf')));
-            $item = html_writer::tag('span', $item, array('class' => 'first-child'));
-            $item = html_writer::tag('span', $item, array('id' => $drawingtool,
-                                                         'class' => 'yui-button yui-radio-button'.$checked));
             $list .= $item;
-            $checked = '';
         }
         $list = html_writer::tag('div', $list, array('id' => 'choosetoolgroup', 'class' => 'yui-buttongroup'));
         $tools .= $list;

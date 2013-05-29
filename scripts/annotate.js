@@ -121,17 +121,17 @@ function uploadpdf_init(Y, server_config, userpreferences) {
 
                 //Update the next/previous buttons
                 if (pageno === pagecount) {
-                    nextbutton.set('disabled', true);
+                    nextbutton.disable();
                     Y.one('#nextpage2').set('disabled', 'disabled');
                 } else {
-                    nextbutton.set('disabled', false);
+                    nextbutton.enable();
                     Y.one('#nextpage2').removeAttribute('disabled');
                 }
                 if (pageno === 1) {
-                    prevbutton.set('disabled', true);
+                    prevbutton.disable();
                     Y.one('#prevpage2').set('disabled', 'disabled');
                 } else {
-                    prevbutton.set('disabled', false);
+                    prevbutton.enable();
                     Y.one('#prevpage2').removeAttribute('disabled');
                 }
             }
@@ -542,10 +542,15 @@ function uploadpdf_init(Y, server_config, userpreferences) {
             }
 
             function getcurrenttool() {
+                var btns;
                 if (!server.editing) {
                     return 'comment';
                 }
-                return choosedrawingtool.get("value").replace('icon', '');
+                btns = choosedrawingtool.getSelectedButtons();
+                if (btns.length >= 1) {
+                    return btns[0].get('value').replace('icon', '');
+                }
+                return 'comment';
             }
 
             function setcurrenttool(toolname) {
@@ -557,16 +562,13 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                 updatelastcomment();
                 toolname += 'icon';
                 var btns, count, idx, i;
-                btns = choosedrawingtool.getButtons();
-                count = choosedrawingtool.getCount();
-                idx = 0;
-                for (i = 0; i < count; i += 1) {
-                    if (btns[i].get("value") === toolname) {
-                        idx = i;
+                btns = choosedrawingtool.getButtons().each(function (el) {
+                    if (el.get('value') === toolname) {
+                        el.addClass('yui3-button-selected');
+                    } else {
+                        el.removeClass('yui3-button-selected');
                     }
-                }
-                choosedrawingtool.check(idx);
-                choosedrawingtool.set('value', btns[idx].get('value'));
+                });
             }
 
             function getcurrentlinecolour() {
@@ -1864,16 +1866,19 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                             top.location = url;
                         });
                     }
-                    if (document.getElementById('savedraft')) {
-                        btn = new YH.widget.Button("savedraft");
+                    if (Y.one('#savedraft')) {
+                        btn = new Y.Plugin.Button.createNode('#savedraft');
                     }
-                    if (document.getElementById('generateresponse')) {
-                        btn = new YH.widget.Button("generateresponse");
+                    if (Y.one('#generateresponse')) {
+                        btn = new Y.Plugin.Button.createNode('#generateresponse');
                     }
-                    if (document.getElementById('choosetoolgroup')) {
-                        choosedrawingtool = new YH.widget.ButtonGroup("choosetoolgroup");
-                        choosedrawingtool.on("checkedButtonChange", function (e) {
-                            var newtool = e.newValue.get("value");
+                    if (Y.one('#choosetoolgroup')) {
+                        choosedrawingtool = new Y.ButtonGroup({
+                            srcNode: '#choosetoolgroup',
+                            type: 'radio'
+                        }).render();
+                        choosedrawingtool.after('selectionChange', function (e) {
+                            var newtool = e.originEvent.currentTarget.get('value');
                             newtool = newtool.substr(0, newtool.length - 4); // Strip off the 'icon' part
                             M.util.set_user_preference('assignfeedback_pdf_tool', newtool);
                             abortline();
@@ -1881,11 +1886,11 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                         });
                     }
                 }
-                btn = new YH.widget.Button("downloadpdf");
-                prevbutton = new YH.widget.Button("prevpage");
-                prevbutton.on("click", gotoprevpage);
-                nextbutton = new YH.widget.Button("nextpage");
-                nextbutton.on("click", gotonextpage);
+                btn = new Y.Plugin.Button.createNode('#downloadpdf');
+                prevbutton = new Y.Button({ srcNode: '#prevpage' }).render();
+                prevbutton.on('click', gotoprevpage);
+                nextbutton = new Y.Button({ srcNode: '#nextpage' }).render();
+                nextbutton.on('click', gotonextpage);
                 Y.one('#selectpage').on('change', selectpage);
                 Y.one('#selectpage2').on('change', selectpage2);
                 Y.one('#prevpage2').on('click', gotoprevpage);
