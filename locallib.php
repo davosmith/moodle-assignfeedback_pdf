@@ -572,9 +572,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
                           'requires' => array('get', 'button', 'overlay', 'dd-drag', 'dd-constrain',
                                               'resize-plugin', 'io-base', 'json', 'panel', 'button-plugin',
-                                              'button-group', 'moodle-assignfeedback_pdf-menubutton',
-                                              'yui2-yahoo-dom-event', 'yui2-container',
-                                              'yui2-element', 'yui2-button', 'yui2-menu', 'yui2-utilities'),
+                                              'button-group', 'moodle-assignfeedback_pdf-menubutton'),
                           'strings' => $strings,
         );
         $PAGE->requires->js_init_call('uploadpdf_init', array($config, $userpreferences), true, $jsmodule);
