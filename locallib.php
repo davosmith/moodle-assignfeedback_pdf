@@ -48,31 +48,6 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return get_string('pdf', 'assignfeedback_pdf');
     }
 
-    /**
-     * Check the ghostscript path is valid to see if the plugin should be enabled.
-     * @return bool
-     */
-    public function is_enabled() {
-        global $CFG;
-
-        static $gspathok = null;
-        if (is_null($gspathok)) {
-            require_once($CFG->dirroot.'/mod/assign/feedback/pdf/mypdflib.php');
-            $result = AssignPDFLib::test_gs_path(false);
-            $gspathok = ($result->status == AssignPDFLib::GSPATH_OK);
-            if (!$gspathok && $this->is_visible()) {
-                // gspath is invalid, so the plugin should be globally disabled
-                set_config('disabled', true, $this->get_subtype() . '_' . $this->get_type());
-            }
-        }
-
-        if (!parent::is_enabled()) {
-            return false;
-        }
-
-        return $gspathok;
-    }
-
     protected function get_rownum() {
         // Find the current row from the assignment 'return_params'
         $returnaction = $this->assignment->get_return_action();
@@ -110,14 +85,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $userid;
     }
 
-    protected function get_submission($userid) {
-        $submission = $this->assignment->get_user_submission($userid, false);
-        $teamsubmission = false;
-        if (!empty($this->assignment->get_instance()->teamsubmission)) {
-            $teamsubmission = $this->assignment->get_group_submission($userid, 0, false);
-        }
-
-        return array($submission, $teamsubmission);
+    protected function get_submission_from_userid($userid) {
+        global $DB;
+        $assignmentid = $this->assignment->get_instance()->id;
+        return $DB->get_record('assign_submission', array('assignment' => $assignmentid, 'userid' => $userid));
     }
 
     /**
@@ -147,12 +118,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return bool true if elements were added to the form
      */
     public function get_form_elements_for_user($grade, MoodleQuickForm $mform, stdClass $data, $userid) {
-        list($submission, $teamsubmission) = $this->get_submission($userid);
-        $annotatelink = $this->annotate_link($submission, $teamsubmission);
+        $submission = $this->get_submission_from_userid($userid);
+        $annotatelink = $this->annotate_link($submission);
         if ($annotatelink) {
             $mform->addElement('static', '', '', $annotatelink);
         }
-        $responselink = $this->response_link($submission, $teamsubmission);
+        $responselink = $this->response_link($submission);
         if ($responselink) {
             $mform->addElement('static', '', '', $responselink);
         }
@@ -167,8 +138,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view_summary(stdClass $grade, & $showviewlink) {
-        list($submission, $teamsubmission) = $this->get_submission($grade->userid);
-        return $this->response_link($submission, $teamsubmission);
+        $submission = $this->get_submission_from_userid($grade->userid);
+        return $this->response_link($submission);
     }
 
     /**
@@ -177,8 +148,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view(stdClass $grade) {
-        list($submission, $teamsubmission) = $this->get_submission($grade->userid);
-        return $this->response_link($submission, $teamsubmission);
+        $submission = $this->get_submission_from_userid($grade->userid);
+        return $this->response_link($submission);
     }
 
     public function supports_quickgrading() {
@@ -186,10 +157,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     public function get_quickgrading_html($userid, $grade) {
-        list($submission, $teamsubmission) = $this->get_submission($userid);
+        $submission = $this->get_submission_from_userid($userid);
 
-        $annotate = $this->annotate_link($submission, $teamsubmission);
-        $resp = $this->response_link($submission, $teamsubmission);
+        $annotate = $this->annotate_link($submission);
+        $resp = $this->response_link($submission);
 
         if (!$resp) {
             return $annotate;
@@ -197,7 +168,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $annotate.'<br />'.$resp;
     }
 
-    protected function annotate_link($submission, $teamsubmission) {
+    protected function annotate_link($submission, $teamsubmission = null) {
         global $DB, $OUTPUT;
         if ($teamsubmission) {
             $realsubmission = $teamsubmission;
@@ -245,7 +216,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return http_build_query($returnparams);
     }
 
-    protected function response_link($submission, $teamsubmission) {
+    protected function response_link($submission, $teamsubmission = null) {
         global $DB, $OUTPUT;
 
         if ($teamsubmission) {
@@ -306,7 +277,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     public function is_empty(stdClass $grade) {
         global $DB;
         $userid = $grade->userid;
-        $submission = $this->assignment->get_user_submission($userid, false);
+        $submission = $this->get_submission_from_userid($userid);
         if ($submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
             return true;
         }
@@ -572,9 +543,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
                           'requires' => array('get', 'button', 'overlay', 'dd-drag', 'dd-constrain',
                                               'resize-plugin', 'io-base', 'json', 'panel', 'button-plugin',
-                                              'button-group', 'moodle-assignfeedback_pdf-menubutton',
-                                              'yui2-yahoo-dom-event', 'yui2-container',
-                                              'yui2-element', 'yui2-button', 'yui2-menu', 'yui2-utilities'),
+                                              'button-group', 'moodle-assignfeedback_pdf-menubutton'),
                           'strings' => $strings,
         );
         $PAGE->requires->js_init_call('uploadpdf_init', array($config, $userpreferences), true, $jsmodule);
