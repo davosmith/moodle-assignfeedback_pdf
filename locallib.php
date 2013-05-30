@@ -757,11 +757,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $colourimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url($colour, 'assignfeedback_pdf')));
             $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}", 'value' => $colour));
         }
-        $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
-        $list = html_writer::tag('div', $list, array('class' => 'bd'));
-        $list = html_writer::tag('div', $list, array('id' => 'choosecolourmenu',
-                                                    'class' => 'yuimenu',
-                                                    'title' => $titlestr));
+        $list = html_writer::tag('ul', $list, array('id' => 'choosecolourmenu', 'class' => 'dropmenu'));
         $tools .= $list;
 
         // Choose line colour:
@@ -775,11 +771,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $colourimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url("line{$colour}", 'assignfeedback_pdf')));
             $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}", 'value' => $colour));
         }
-        $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
-        $list = html_writer::tag('div', $list, array('class' => 'bd'));
-        $list = html_writer::tag('div', $list, array('id' => 'chooselinecolourmenu',
-                                                    'class' => 'yuimenu',
-                                                    'title' => $titlestr));
+        $list = html_writer::tag('ul', $list, array('id' => 'chooselinecolourmenu', 'class' => 'dropmenu'));
         $tools .= $list;
 
         // Stamps:
@@ -795,11 +787,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                                                            'width' => '32', 'height' => '32'));
             $list .= html_writer::tag('li', $stampimg, array('class' => "yuimenuitem choosestamp-{$stamp}", 'value' => $stamp));
         }
-        $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
-        $list = html_writer::tag('div', $list, array('class' => 'bd'));
-        $list = html_writer::tag('div', $list, array('id' => 'choosestampmenu',
-                                                    'class' => 'yuimenu',
-                                                    'title' => $titlestr));
+        $list = html_writer::tag('ul', $list, array('id' => 'choosestampmenu', 'class' => 'dropmenu'));
         $tools .= $list;
 
         // Choose annotation type.
