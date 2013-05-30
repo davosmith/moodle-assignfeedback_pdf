@@ -133,6 +133,13 @@
     top: 0;
 }
 
+.path-mod-assign-feedback-pdf .yui3-button.menubutton {
+    padding-right: 20px;
+    background-image: url([[pix:assignfeedback_pdf|menu-button-arrow]]);
+    background-repeat: no-repeat;
+    background-position: right center;
+}
+
 .path-mod-assign-feedback-pdf #saveoptions {
     margin-bottom: 5px;
 }
@@ -150,6 +157,27 @@
     background-repeat: no-repeat;
     background-position: 7px 4px;
 }
+
+.path-mod-assign-feedback-pdf .yuimenu {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 20;
+}
+
+.path-mod-assign-feedback-pdf .yuimenu .bd {
+    box-shadow: 3px 3px 5px #ccc;
+}
+
+.path-mod-assign-feedback-pdf .yuimenu li {
+    padding: 1px 20px;
+    cursor: pointer;
+}
+
+.path-mod-assign-feedback-pdf .yuimenu li:hover { background-color: #d0d6f3; }
+.path-mod-assign-feedback-pdf .yui3-button.menubutton:hover { background-color: #d8d8d8; }
+.path-mod-assign-feedback-pdf .yui3-button.menubutton:active { background-color: #cacaca; }
 
 .path-mod-assign-feedback-pdf #commenticon { background-image: url([[pix:assignfeedback_pdf|commenticon]]); }
 .path-mod-assign-feedback-pdf #lineicon { background-image: url([[pix:assignfeedback_pdf|lineicon]]); }

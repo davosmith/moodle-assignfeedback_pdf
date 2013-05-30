@@ -572,7 +572,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
                           'requires' => array('get', 'button', 'overlay', 'dd-drag', 'dd-constrain',
                                               'resize-plugin', 'io-base', 'json', 'panel', 'button-plugin',
-                                              'button-group',
+                                              'button-group', 'moodle-assignfeedback_pdf-menubutton',
                                               'yui2-yahoo-dom-event', 'yui2-container',
                                               'yui2-element', 'yui2-button', 'yui2-menu', 'yui2-utilities'),
                           'strings' => $strings,
@@ -748,56 +748,57 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         // Choose comment colour:
         $titlestr = get_string('commentcolour', 'assignfeedback_pdf');
-        $tools .= html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'choosecolour',
-                                                        'style' => 'line-height:normal;', 'name' => 'choosecolour',
-                                                        'value' => '', 'title' => $titlestr));
+        $tools .= html_writer::empty_tag('input', array('type' => 'image', 'id' => 'choosecolour',
+                                                  'style' => 'line-height:normal;', 'name' => 'choosecolour',
+                                                  'value' => '', 'title' => $titlestr));
         $colours = array('red','yellow','green','blue','white','clear');
         $list = '';
         foreach ($colours as $colour) {
             $colourimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url($colour, 'assignfeedback_pdf')));
-            $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}"));
+            $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}", 'value' => $colour));
         }
         $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
         $list = html_writer::tag('div', $list, array('class' => 'bd'));
         $list = html_writer::tag('div', $list, array('id' => 'choosecolourmenu',
-                                                    'class' => 'yuimenu yui-overlay yui-overlay-hidden',
+                                                    'class' => 'yuimenu',
                                                     'title' => $titlestr));
         $tools .= $list;
 
         // Choose line colour:
         $titlestr = get_string('linecolour', 'assignfeedback_pdf');
-        $tools .= html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'chooselinecolour',
+        $tools .= html_writer::empty_tag('input', array('type' => 'image', 'id' => 'chooselinecolour',
                                                         'style' => 'line-height:normal;', 'name' => 'chooselinecolour',
                                                         'value' => '', 'title' => $titlestr));
         $colours = array('red','yellow','green','blue','white','black');
         $list = '';
         foreach ($colours as $colour) {
             $colourimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url("line{$colour}", 'assignfeedback_pdf')));
-            $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}"));
+            $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}", 'value' => $colour));
         }
         $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
         $list = html_writer::tag('div', $list, array('class' => 'bd'));
         $list = html_writer::tag('div', $list, array('id' => 'chooselinecolourmenu',
-                                                    'class' => 'yuimenu yui-overlay yui-overlay-hidden',
+                                                    'class' => 'yuimenu',
                                                     'title' => $titlestr));
         $tools .= $list;
 
         // Stamps:
         $titlestr = get_string('stamp', 'assignfeedback_pdf');
-        $tools .= html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'choosestamp',
+        $tools .= html_writer::empty_tag('input', array('type' => 'image', 'id' => 'choosestamp',
                                                         'style' => 'line-height:normal;', 'name' => 'choosestamp',
+                                                        'width' => '32px', 'height' => '32px',
                                                         'value' => '', 'title' => $titlestr));
         $stamps = AssignPDFLib::get_stamps();
         $list = '';
         foreach ($stamps as $stamp => $filename) {
             $stampimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url("stamps/{$stamp}", 'assignfeedback_pdf'),
                                                            'width' => '32', 'height' => '32'));
-            $list .= html_writer::tag('li', $stampimg, array('class' => "yuimenuitem choosestamp-{$stamp}"));
+            $list .= html_writer::tag('li', $stampimg, array('class' => "yuimenuitem choosestamp-{$stamp}", 'value' => $stamp));
         }
         $list = html_writer::tag('ul', $list, array('class' => 'first-of-type'));
         $list = html_writer::tag('div', $list, array('class' => 'bd'));
         $list = html_writer::tag('div', $list, array('id' => 'choosestampmenu',
-                                                    'class' => 'yuimenu yui-overlay yui-overlay-hidden',
+                                                    'class' => 'yuimenu',
                                                     'title' => $titlestr));
         $tools .= $list;
 

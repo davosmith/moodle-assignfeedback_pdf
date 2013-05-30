@@ -294,8 +294,8 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                 if (colour !== 'red' && colour !== 'green' && colour !== 'blue' && colour !== 'white' && colour !== 'clear') {
                     colour = 'yellow';
                 }
-                colourmenu.set("label", '<img src="' + server_config.image_path + colour + '.gif" />');
-                colourmenu.set("value", colour);
+                colourmenu.set('src', server_config.image_path + colour + '.gif');
+                colourmenu.set('value', colour);
                 changecolour();
             }
 
@@ -592,8 +592,8 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                 if (colour !== 'yellow' && colour !== 'green' && colour !== 'blue' && colour !== 'white' && colour !== 'black') {
                     colour = 'red';
                 }
-                linecolourmenu.set("label", '<img src="' + server_config.image_path + 'line' + colour + '.gif" />');
-                linecolourmenu.set("value", colour);
+                linecolourmenu.set('src', server_config.image_path + 'line' + colour + '.gif');
+                linecolourmenu.set('value', colour);
                 changelinecolour();
             }
 
@@ -701,8 +701,8 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                     return;
                 }
                 // Check valid stamp?
-                stampmenu.set("label", '<img width="32" height="32" src="' + getstampimage(stamp) + '" />');
-                stampmenu.set("value", stamp);
+                stampmenu.set('src', getstampimage(stamp));
+                stampmenu.set('value', stamp);
                 if (settool === undefined) {
                     settool = true;
                 }
@@ -1806,49 +1806,28 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                 // TODO davo - remove YUI2 buttons
                 if (server.editing) {
                     if (document.getElementById('choosecolour')) {
-                        colourmenu = new YH.widget.Button("choosecolour", {
-                            type: "menu",
-                            menu: "choosecolourmenu",
-                            lazyloadmenu: false
+                        colourmenu = new M.assignfeedback_pdf.menubutton({
+                            button: '#choosecolour',
+                            menu: '#choosecolourmenu',
+                            isimage: true
                         });
-                        colourmenu.on("selectedMenuItemChange", function (e) {
-                            var menuitem, colour;
-                            menuitem = e.newValue;
-                            colour = (/choosecolour-([a-z]*)/i.exec(menuitem.element.className))[1];
-                            this.set("label", '<img src="' + server_config.image_path + colour + '.gif" />');
-                            this.set("value", colour);
-                            changecolour();
-                        });
+                        colourmenu.on('selectionChanged', changecolour);
                     }
                     if (document.getElementById('chooselinecolour')) {
-                        linecolourmenu = new YH.widget.Button("chooselinecolour", {
-                            type: "menu",
-                            menu: "chooselinecolourmenu",
-                            lazyloadmenu: false
+                        linecolourmenu = new M.assignfeedback_pdf.menubutton({
+                            button: '#chooselinecolour',
+                            menu: '#chooselinecolourmenu',
+                            isimage: true
                         });
-                        linecolourmenu.on("selectedMenuItemChange", function (e) {
-                            var menuitem, colour;
-                            menuitem = e.newValue;
-                            colour = (/choosecolour-([a-z]*)/i.exec(menuitem.element.className))[1];
-                            this.set("label", '<img src="' + server_config.image_path + 'line' + colour + '.gif" />');
-                            this.set("value", colour);
-                            changelinecolour();
-                        });
+                        linecolourmenu.on('selectionChanged', changelinecolour);
                     }
                     if (document.getElementById('choosestamp')) {
-                        stampmenu = new YH.widget.Button("choosestamp", {
-                            type: "menu",
-                            menu: "choosestampmenu",
-                            lazyloadmenu: false
+                        stampmenu = new M.assignfeedback_pdf.menubutton({
+                            button: '#choosestamp',
+                            menu: '#choosestampmenu',
+                            isimage: true
                         });
-                        stampmenu.on("selectedMenuItemChange", function (e) {
-                            var menuitem, stamp;
-                            menuitem = e.newValue;
-                            stamp = (/choosestamp-([a-z]*)/i.exec(menuitem.element.className))[1];
-                            this.set("label", '<img width="32" height="32" src="' + getstampimage(stamp) + '" />');
-                            this.set("value", stamp);
-                            changestamp();
-                        });
+                        stampmenu.on('selectionChanged', changestamp);
                     }
                     if (document.getElementById('showpreviousbutton')) {
                         showPreviousMenu = new YH.widget.Button("showpreviousbutton", {
