@@ -2092,5 +2092,8 @@ function uploadpdf_init(Y, server_config, userpreferences) {
 
             startjs();
             initcontextmenu();
+
+            Y.one('#everythingspinner').remove(true);
+            Y.one('#everything').removeClass('hidden');
         });
 }

@@ -1,3 +1,7 @@
+.path-mod-assign-feedback-pdf #everything.hidden { display: none; }
+.path-mod-assign-feedback-pdf #everythingspinner { display: none; }
+.path-mod-assign-feedback-pdf.jsenabled #everythingspinner { display: block; min-height: 400px }
+
 .path-mod-assign-feedback-pdf .comment {
     position: absolute;
     border: black 1px solid;
@@ -120,6 +124,8 @@
 .path-mod-assign-feedback-pdf .contextmenu li a.delete { width: 10px; }
 .path-mod-assign-feedback-pdf .contextmenu li a.delete:hover { background-color:#d00; }
 
+.path-mod-assign-feedback-pdf #saveoptions .yui3-button.menubutton { position: relative; top: -10px; margin-left: 10px; }
+
 .path-mod-assign-feedback-pdf #toolbar-line2 button.yui3-button {
     height: 43px;
     line-height: normal;
@@ -178,6 +184,8 @@
     background-color: #fff;
     margin: 0;
     list-style: none;
+    max-height: 250px;
+    overflow-y: auto;
 }
 .path-mod-assign-feedback-pdf .dropmenu li { padding: 1px 20px; cursor: pointer; }
 .path-mod-assign-feedback-pdf .dropmenu li:hover { background-color: #d0d6f3; }

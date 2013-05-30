@@ -499,6 +499,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         echo $OUTPUT->header();
 
+        echo '<noscript>'.get_string('jsrequired', 'assignfeedback_pdf').'</noscript>';
+        echo '<div id="everythingspinner">'.$OUTPUT->pix_icon('i/loading', '').'</div>';
+        echo '<div id="everything" class="hidden">';
+
         echo $this->output_controls($submission, $user, $pageno, $enableedit, $showprevious);
 
         // Output the page image
@@ -576,6 +580,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                           'strings' => $strings,
         );
         $PAGE->requires->js_init_call('uploadpdf_init', array($config, $userpreferences), true, $jsmodule);
+
+        echo '</div>'; // 'everything' div
 
         echo $OUTPUT->footer();
     }
@@ -671,7 +677,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 if (strlen($text) > 40) {
                     $text = substr($text, 0, 39).'&hellip;';
                 }
-                $outcomments .= html_writer::tag('li', $comment->pageno.': '.s($text),
+                $outcomments .= html_writer::tag('li', $comment->pageno.': '.format_string($text),
                                                  array('value' => "{$comment->pageno}:{$comment->id}"));
             }
         }
@@ -795,8 +801,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $drawingtools = array('commenticon','lineicon','rectangleicon','ovalicon','freehandicon','highlighticon','stampicon','eraseicon');
         $list = '';
         foreach ($drawingtools as $drawingtool) {
-            $item = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url($drawingtool, 'assignfeedback_pdf')));
-            $item = html_writer::tag('button', $item, array('name' => 'choosetoolradio', 'value' => $drawingtool,
+            $item = html_writer::tag('button', '', array('name' => 'choosetoolradio', 'value' => $drawingtool,
                                                            'id' => $drawingtool,
                                                            'title' => get_string($drawingtool, 'assignfeedback_pdf')));
             $list .= $item;
