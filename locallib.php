@@ -470,6 +470,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         echo $OUTPUT->header();
 
+        echo '<noscript>'.get_string('jsrequired', 'assignfeedback_pdf').'</noscript>';
+        echo '<div id="everythingspinner">'.$OUTPUT->pix_icon('i/loading', '').'</div>';
+        echo '<div id="everything" class="hidden">';
+
         echo $this->output_controls($submission, $user, $pageno, $enableedit, $showprevious);
 
         // Output the page image
@@ -548,6 +552,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         );
         $PAGE->requires->js_init_call('uploadpdf_init', array($config, $userpreferences), true, $jsmodule);
 
+        echo '</div>'; // 'everything' div
+
         echo $OUTPUT->footer();
     }
 
@@ -622,9 +628,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 $showpreviousstr = get_string('showpreviousassignment','assignfeedback_pdf');;
                 $saveopts .= html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'showpreviousbutton',
                                                              'name' => 'showpreviousbutton', 'value' => $showpreviousstr));
-                $saveopts .= html_writer::select($previoussubs, 'showprevious', $showprevious,
-                                                 array('-1' => get_string('previousnone', 'assignfeedback_pdf')),
-                                                 array('id' => 'showpreviousselect', 'onChange' => 'this.form.submit();'));
+                $list = html_writer::tag('li', get_string('previousnone', 'assignfeedback_pdf'), array('value' => '-1'));
+                foreach ($previoussubs as $id => $previoussub) {
+                    $list .= html_writer::tag('li', $previoussub, array('value' => $id));
+                }
+                $saveopts .= html_writer::tag('ul', $list, array('id' => 'showpreviousselect', 'class' => 'dropmenu'));
             }
         }
 
@@ -632,18 +640,19 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $saveopts .= html_writer::tag('button', get_string('findcomments','assignfeedback_pdf'),
                                       array('id' => 'findcommentsbutton'));
         if (empty($comments)) {
-            $outcomments = array('0:0' => get_string('findcommentsempty', 'assignfeedback_pdf'));
+            $outcomments = html_writer::tag('li', get_string('findcommentsempty', 'assignfeedback_pdf'), array('value' => '0:0'));
         } else {
-            $outcomments = array();
+            $outcomments = '';
             foreach ($comments as $comment) {
                 $text = $comment->rawtext;
                 if (strlen($text) > 40) {
                     $text = substr($text, 0, 39).'&hellip;';
                 }
-                $outcomments["{$comment->pageno}:{$comment->id}"] = $comment->pageno.': '.s($text);
+                $outcomments .= html_writer::tag('li', $comment->pageno.': '.format_string($text),
+                                                 array('value' => "{$comment->pageno}:{$comment->id}"));
             }
         }
-        $saveopts .= html_writer::select($outcomments, 'findcomments', '', false, array('id' => 'findcommentsselect'));
+        $saveopts .= html_writer::tag('ul', $outcomments, array('id' => 'findcommentsselect', 'class' => 'dropmenu'));
 
         if (!$enableedit) {
             // If opening in same window - show 'back to comment list' link
@@ -724,7 +733,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $list = '';
         foreach ($colours as $colour) {
             $colourimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url($colour, 'assignfeedback_pdf')));
-            $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}", 'value' => $colour));
+            $list .= html_writer::tag('li', $colourimg, array('class' => "choosecolour-{$colour}", 'value' => $colour));
         }
         $list = html_writer::tag('ul', $list, array('id' => 'choosecolourmenu', 'class' => 'dropmenu'));
         $tools .= $list;
@@ -738,7 +747,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $list = '';
         foreach ($colours as $colour) {
             $colourimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url("line{$colour}", 'assignfeedback_pdf')));
-            $list .= html_writer::tag('li', $colourimg, array('class' => "yuimenuitem choosecolour-{$colour}", 'value' => $colour));
+            $list .= html_writer::tag('li', $colourimg, array('class' => "choosecolour-{$colour}", 'value' => $colour));
         }
         $list = html_writer::tag('ul', $list, array('id' => 'chooselinecolourmenu', 'class' => 'dropmenu'));
         $tools .= $list;
@@ -754,7 +763,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         foreach ($stamps as $stamp => $filename) {
             $stampimg = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url("stamps/{$stamp}", 'assignfeedback_pdf'),
                                                            'width' => '32', 'height' => '32'));
-            $list .= html_writer::tag('li', $stampimg, array('class' => "yuimenuitem choosestamp-{$stamp}", 'value' => $stamp));
+            $list .= html_writer::tag('li', $stampimg, array('class' => "choosestamp-{$stamp}", 'value' => $stamp));
         }
         $list = html_writer::tag('ul', $list, array('id' => 'choosestampmenu', 'class' => 'dropmenu'));
         $tools .= $list;
@@ -763,8 +772,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $drawingtools = array('commenticon','lineicon','rectangleicon','ovalicon','freehandicon','highlighticon','stampicon','eraseicon');
         $list = '';
         foreach ($drawingtools as $drawingtool) {
-            $item = html_writer::empty_tag('img', array('src' => $OUTPUT->pix_url($drawingtool, 'assignfeedback_pdf')));
-            $item = html_writer::tag('button', $item, array('name' => 'choosetoolradio', 'value' => $drawingtool,
+            $item = html_writer::tag('button', '', array('name' => 'choosetoolradio', 'value' => $drawingtool,
                                                            'id' => $drawingtool,
                                                            'title' => get_string($drawingtool, 'assignfeedback_pdf')));
             $list .= $item;

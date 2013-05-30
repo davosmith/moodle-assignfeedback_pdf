@@ -30,7 +30,7 @@ YUI.add('moodle-assignfeedback_pdf-menubutton', function (Y) {
                     this.show_menu();
                 }
             }, this);
-            this.menu.all('li.yuimenuitem').on('click', this.select_item, this);
+            this.menu.all('li').on('click', this.select_item, this);
         },
 
         hide_menu: function () {
@@ -54,15 +54,17 @@ YUI.add('moodle-assignfeedback_pdf-menubutton', function (Y) {
 
             x = this.button.getX();
             y = this.button.getY() + parseInt(this.button.getComputedStyle('height'), 10);
-            y += parseInt(this.button.getComputedStyle('paddingTop'), 10);
-            y += parseInt(this.button.getComputedStyle('paddingBottom'), 10);
+            if (this.isimage) {
+                y += parseInt(this.button.getComputedStyle('paddingTop'), 10);
+                y += parseInt(this.button.getComputedStyle('paddingBottom'), 10);
+            }
 
             this.menu.setStyle('left', x + 'px');
             this.menu.setStyle('top', y + 'px');
         },
 
         select_item: function (e) {
-            var value, src, content;
+            var value, src;
             value = e.currentTarget.getAttribute('value');
             this.button.set('value', value);
             if (this.isimage) {
@@ -70,9 +72,6 @@ YUI.add('moodle-assignfeedback_pdf-menubutton', function (Y) {
                 if (src) {
                     this.button.set('src', src);
                 }
-            } else {
-                content = e.currentTarget.getContent();
-                this.button.setContent(content);
             }
             this.fire('selectionChanged', {target: e.currentTarget, value: value});
         },
