@@ -2042,7 +2042,8 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                         removeitem: function (itemid) {
                             server.removefromquicklist(itemid);
                         }
-                    }
+                    },
+                    Y: Y
                 });
                 context_quicklist.addmenu(Y.one('#pdfimg'));
                 context_quicklist.quickcount = 0;
@@ -2080,7 +2081,8 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                             }
                             element.remove(true);
                         }
-                    }
+                    },
+                    Y: Y
                 });
 
                 server.getquicklist();

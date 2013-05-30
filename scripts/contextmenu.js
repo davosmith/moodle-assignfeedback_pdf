@@ -2,10 +2,10 @@
    http://davidwalsh.name/mootools-context-menu
    Now converted to work with YUI3 instead
 */
-/*global Y*/
 function ContextMenu(options) {
     "use strict";
     var ret = {
+        Y: null,
         menu: null,
         targets: [],
 
@@ -25,18 +25,19 @@ function ContextMenu(options) {
 
             //set options
             this.setOptions(options);
+            this.Y = options.Y;
 
             //option diffs menu
-            this.menu = Y.one(this.options.menu);
+            this.menu = this.Y.one(this.options.menu);
             this.targets = [];
             if (typeof this.options.targets === 'object') {
                 for (targ in this.options.targets) {
                     if (this.options.targets.hasOwnProperty(targ)) {
-                        this.targets.push(Y.one(this.options.targets[targ]));
+                        this.targets.push(this.Y.one(this.options.targets[targ]));
                     }
                 }
             } else {
-                this.targets.push(Y.one(this.options.targets));
+                this.targets.push(this.Y.one(this.options.targets));
             }
 
             //hide and begin the listener
@@ -75,7 +76,7 @@ function ContextMenu(options) {
             }, this);
 
             //hide on body click
-            Y.one('body').on('click', function () {
+            this.Y.one('body').on('click', function () {
                 this.hide();
             }, this);
         },
@@ -98,7 +99,7 @@ function ContextMenu(options) {
                     offx = this.options.offsets.x;
                     offy = this.options.offsets.y;
                     // Nasty hack to fix positioning problem in IE <= 7 (IE 8 seems fine)
-                    if (Y.UA.ie === 6 || Y.UA.ie === 7) {
+                    if (this.Y.UA.ie === 6 || this.Y.UA.ie === 7) {
                         offx -= 10;
                     }
                     this.menu.setStyles({left: (e.pageX + offx) + 'px', top: (e.pageY + offy) + 'px' });
@@ -146,8 +147,8 @@ function ContextMenu(options) {
         addItem: function (item, text, deleteicon, func, titletext) {
             var newel, link, dellink, delico;
 
-            newel = Y.Node.create('<li></li>');
-            link = Y.Node.create('<a></a>');
+            newel = this.Y.Node.create('<li></li>');
+            link = this.Y.Node.create('<a></a>');
             link.setContent(text);
             link.set('href', '#' + item);
             if (titletext) {
@@ -155,8 +156,8 @@ function ContextMenu(options) {
             }
             newel.appendChild(link);
             if (deleteicon) {
-                dellink = Y.Node.create('<a></a>');
-                delico = Y.Node.create('<img />');
+                dellink = this.Y.Node.create('<a></a>');
+                delico = this.Y.Node.create('<img />');
                 delico.set('src', deleteicon);
                 dellink.set('href', '#del' + item);
                 dellink.addClass('delete');
@@ -181,7 +182,7 @@ function ContextMenu(options) {
         removeItem: function (item) {
             var itemid, el;
             itemid = this.options.menu + item;
-            el = Y.one(itemid);
+            el = this.Y.one(itemid);
             if (el) {  el.remove(true); }
             return this;
         },
