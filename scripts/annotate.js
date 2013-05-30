@@ -9,16 +9,10 @@ function uploadpdf_init(Y, server_config, userpreferences) {
         'scripts/raphael-min.js'],
         function () {
 
-            var YH, currentcomment, editbox, server, context_quicklist, context_comment, quicklist,
+            var currentcomment, editbox, server, context_quicklist, context_comment, quicklist,
                 pagelist, waitingforpage, pagestopreload, pagesremaining, pageunloading, lasthighlight, colourmenu, linecolourmenu,
                 nextbutton, prevbutton, choosedrawingtool, findcommentsmenu, stampmenu, resendtimeout, currentpaper, currentline,
                 linestartpos, freehandpoints, allannotations, LINEWIDTH, HIGHLIGHT_LINEWIDTH, $defined;
-
-            if (typeof YAHOO === 'undefined') {
-                YH = Y.YUI2;
-            } else {
-                YH = YAHOO;
-            }
 
             if (!String.prototype.trim) {
                 // Provide 'trim' function in IE8
@@ -1801,9 +1795,8 @@ function uploadpdf_init(Y, server_config, userpreferences) {
             function startjs() {
                 server.initialize(server_config);
 
-                var showPreviousMenu, colour, linecolour, stamp, tool, pageno, sel, selidx, selpage, btn, helppanel;
+                var showPreviousMenu, pageno, sel, selpage, btn, helppanel;
 
-                // TODO davo - remove YUI2 buttons
                 if (server.editing) {
                     if (document.getElementById('choosecolour')) {
                         colourmenu = new M.assignfeedback_pdf.menubutton({
@@ -1830,14 +1823,14 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                         stampmenu.on('selectionChanged', changestamp);
                     }
                     if (document.getElementById('showpreviousbutton')) {
-                        showPreviousMenu = new YH.widget.Button("showpreviousbutton", {
-                            type: "menu",
-                            menu: "showpreviousselect",
-                            lazyloadmenu: false
+                        showPreviousMenu = new M.assignfeedback_pdf.menubutton({
+                            button: "#showpreviousbutton",
+                            menu: "#showpreviousselect",
+                            isimage: false
                         });
-                        showPreviousMenu.on("selectedMenuItemChange", function (e) {
+                        showPreviousMenu.on("selectionChanged", function (e) {
                             var compareid, url;
-                            compareid = e.newValue.value;
+                            compareid = e.value;
                             url = 'editcomment.php?id=' + server.id + '&submissionid=' + server.submissionid + '&pageno=' + server.pageno;
                             if (compareid > -1) {
                                 url += '&topframe=1&showprevious=' + compareid;
@@ -1874,14 +1867,14 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                 Y.one('#selectpage2').on('change', selectpage2);
                 Y.one('#prevpage2').on('click', gotoprevpage);
                 Y.one('#nextpage2').on('click', gotonextpage);
-                findcommentsmenu = new YH.widget.Button("findcommentsbutton", {
-                    type: "menu",
-                    menu: "findcommentsselect",
-                    lazyloadmenu: false
+                findcommentsmenu = new M.assignfeedback_pdf.menubutton({
+                    button: "#findcommentsbutton",
+                    menu: "#findcommentsselect",
+                    isimage: false
                 });
-                findcommentsmenu.on("selectedMenuItemChange", function (e) {
+                findcommentsmenu.on("selectionChanged", function (e) {
                     var menuval, pageno, commentid;
-                    menuval = e.newValue.value;
+                    menuval = e.value;
                     pageno = parseInt(menuval.split(':')[0], 10);
                     commentid = parseInt(menuval.split(':')[1], 10);
                     if (pageno > 0) {
