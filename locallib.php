@@ -305,8 +305,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      */
     public function is_empty(stdClass $grade) {
         global $DB;
-        $userid = $grade->userid;
-        $submission = $this->assignment->get_user_submission($userid, false);
+        list($submission, $teamsubmission) = $this->get_submission($grade->userid);
+        if ($teamsubmission) {
+            $submission = $teamsubmission;
+        }
         if ($submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
             return true;
         }
@@ -399,7 +401,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             }
         } else {
             // Team submission.
-            if (!groups_is_member($group->id)) {
+            if (groups_is_member($group->id)) {
                 if (!has_capability('mod/assign:grade', $context)) {
                     require_capability('mod/assign:submit', $context);
                     $enableedit = false;
