@@ -82,6 +82,21 @@ YUI.add('moodle-assignfeedback_pdf-menubutton', function (Y) {
 
         get: function (attr) {
             return this.button.get(attr);
+        },
+
+        get_items: function () {
+            return this.menu.all('li');
+        },
+
+        add_item: function (text, value, beforenode) {
+            var newnode;
+            newnode = Y.Node.create('<li value="' + value + '">' + text + '</li>');
+            if (beforenode === undefined) {
+                this.menu.appendChild(newnode);
+            } else {
+                this.menu.insertBefore(newnode, beforenode);
+            }
+            newnode.on('click', this.select_item, this);
         }
     });
 

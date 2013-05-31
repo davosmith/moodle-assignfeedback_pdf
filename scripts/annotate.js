@@ -183,59 +183,63 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                     text = page + ': ' + text;
                 }
 
-                var value, menu, items, i, details, itempage, itemid;
+                var value, items, addeditem;
 
                 id = parseInt(id, 10);
                 page = parseInt(page, 10);
                 value = page + ':' + id;
-                menu = findcommentsmenu.getMenu();
-                items = menu.getItems();
-                for (i = 0; i < items.length; i += 1) {
-                    if ($defined(items[i].value)) {
-                        details = items[i].value.split(':');
+                items = findcommentsmenu.get_items();
+                addeditem = false;
+                items.each(function (node, idx, list) {
+                    if (addeditem) {
+                        return;
+                    }
+                    var itemvalue, details, itempage, itemid;
+                    itemvalue = node.getAttribute('value');
+                    if (itemvalue) {
+                        details = itemvalue.split(':');
                         itempage = parseInt(details[0], 10);
                         itemid = parseInt(details[1], 10);
-                        if (itemid === 0) { // 'No comments'
-                            items[i].value = page + ':' + id;
-                            items[i].cfg.setProperty('text', text);
-                            return;
-                        }
-                        if (itemid === id) {
-                            items[i].cfg.setProperty('text', text);
-                            return;
-                        }
-                        if (itempage > page) {
-                            menu.insertItem({text: text, value: value}, parseInt(i, 10));
-                            return;
+                        if (itemid === 0) { // 'No comments' entry.
+                            node.setAttribute('value', itemvalue);
+                            node.setContent(text);
+                            addeditem = true;
+                        } else if (itemid === id) { // Update existing entry.
+                            node.setContent(text);
+                            addeditem = true;
+                        } else if (itempage > page) {
+                            findcommentsmenu.add_item(text, value, node);
+                            addeditem = true;
                         }
                     }
+                });
+                if (!addeditem) {
+                    findcommentsmenu.add_item(text, value);
                 }
-                menu.addItem({text: text, value: value});
             }
 
             function removefromfindcomments(id) {
                 if (!server.editing) {
                     return;
                 }
-                var menu, items, i, itemid;
+                var items;
                 id = parseInt(id, 10);
-                menu = findcommentsmenu.getMenu();
-                items = menu.getItems();
-                for (i = 0; i < items.length; i += 1) {
-                    if ($defined(items[i].value)) {
-                        itemid = parseInt(items[i].value.split(':')[1], 10);
+                items = findcommentsmenu.get_items();
+                items.each(function (node, idx, list) {
+                    var value, itemid;
+                    value = node.getAttribute('value');
+                    if (value) {
+                        itemid = parseInt(value.split(':')[1], 10);
                         if (itemid === id) {
-                            if (items.length === 1) {
-                                // Only item in list - set it to 'no comments'
-                                items[i].cfg.setProperty('text', M.util.get_string('findcommentsempty', 'assignfeedback_pdf'));
-                                items[i].value = '0:0';
+                            if (list.size() === 1) {
+                                node.setContent(M.util.get_string('findcommentsempty', 'assignfeedback_pdf'));
+                                node.setAttribute('value', '0:0');
                             } else {
-                                menu.removeItem(items[i]);
+                                node.remove(true);
                             }
-                            return;
                         }
                     }
-                }
+                });
             }
 
             function setcolourclass(colour, comment) {
@@ -393,6 +397,9 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                             server.removecomment(id);
                         }
                         currentcomment.remove(true);
+                        if (lasthighlight === currentcomment) {
+                            lasthighlight = null;
+                        }
 
                     } else {
                         oldcolour = currentcomment.getData('oldcolour');
@@ -2072,6 +2079,9 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                                 server.removecomment(id);
                             }
                             element.remove(true);
+                            if (element === lasthighlight) {
+                                lasthighlight = null;
+                            }
                         }
                     }
                 });
