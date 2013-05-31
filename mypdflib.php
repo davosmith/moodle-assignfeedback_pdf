@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -91,7 +90,8 @@ class AssignPDFLib extends FPDI {
 
                     $text = str_replace('&lt;', '<', $text);
                     $text = str_replace('&gt;', '>', $text);
-                    $this->MultiCell($width, 1.0, $text, 0, 'L', 0, 1, $x, $y); /* width, height, text, border, justify, fill, ln, x, y */
+                    $this->MultiCell($width, 1.0, $text, 0, 'L', 0, 1, $x, $y);
+                    // Params: width, height, text, border, justify, fill, ln, x, y.
                 }
             }
 
@@ -220,21 +220,21 @@ class AssignPDFLib extends FPDI {
             return false;
         }
         switch ($colour) {
-        case 'red':
-            $this->SetFillColor(255, 176, 176);
-            break;
-        case 'green':
-            $this->SetFillColor(176, 255, 176);
-            break;
-        case 'blue':
-            $this->SetFillColor(208, 208, 255);
-            break;
-        case 'white':
-            $this->SetFillColor(255, 255, 255);
-            break;
-        default: /* Yellow */
-            $this->SetFillColor(255, 255, 176);
-            break;
+            case 'red':
+                $this->SetFillColor(255, 176, 176);
+                break;
+            case 'green':
+                $this->SetFillColor(176, 255, 176);
+                break;
+            case 'blue':
+                $this->SetFillColor(208, 208, 255);
+                break;
+            case 'white':
+                $this->SetFillColor(255, 255, 255);
+                break;
+            default: /* Yellow */
+                $this->SetFillColor(255, 255, 176);
+                break;
         }
 
         $x *= $this->scale;
@@ -250,9 +250,9 @@ class AssignPDFLib extends FPDI {
             if (($newy - $y)<(24.0 * $this->scale)) { /* Single line comment (ie less than 2*text height) */
                 $width = $this->GetStringWidth($text) + 4.0; /* Resize box to the length of the text + 2 line widths */
             }
-            // Now we know the final size of the comment, draw a rectangle with the background colour
+            // Now we know the final size of the comment, draw a rectangle with the background colour.
             $this->Rect($x, $y, $width, $newy - $y, 'DF');
-            // Re-draw the text over the top of the background rectangle
+            // Re-draw the text over the top of the background rectangle.
             $this->MultiCell($width, 1.0, $text, 0, 'L', 0, 1, $x, $y); /* width, height, text, border, justify, fill, ln, x, y */
         }
         return true;
@@ -276,25 +276,25 @@ class AssignPDFLib extends FPDI {
             return false;
         }
         switch ($colour) {
-        case 'yellow':
-            $this->SetDrawColor(255, 255, 0);
-            break;
-        case 'green':
-            $this->SetDrawColor(0, 255, 0);
-            break;
-        case 'blue':
-            $this->SetDrawColor(0, 0, 255);
-            break;
-        case 'white':
-            $this->SetDrawColor(255, 255, 255);
-            break;
-        case 'black':
-            $this->SetDrawColor(0, 0, 0);
-            break;
-        default: /* Red */
-            $colour = 'red';
-            $this->SetDrawColor(255, 0, 0);
-            break;
+            case 'yellow':
+                $this->SetDrawColor(255, 255, 0);
+                break;
+            case 'green':
+                $this->SetDrawColor(0, 255, 0);
+                break;
+            case 'blue':
+                $this->SetDrawColor(0, 0, 255);
+                break;
+            case 'white':
+                $this->SetDrawColor(255, 255, 255);
+                break;
+            case 'black':
+                $this->SetDrawColor(0, 0, 0);
+                break;
+            default: /* Red */
+                $colour = 'red';
+                $this->SetDrawColor(255, 0, 0);
+                break;
         }
 
         $sx *= $this->scale;
@@ -304,50 +304,50 @@ class AssignPDFLib extends FPDI {
 
         $this->SetLineWidth(3.0 * $this->scale);
         switch ($type) {
-        case 'oval':
-            $rx = abs($sx - $ex) / 2;
-            $ry = abs($sy - $ey) / 2;
-            $sx = min($sx, $ex) + $rx;
-            $sy = min($sy, $ey) + $ry;
-            $this->Ellipse($sx, $sy, $rx, $ry);
-            break;
-        case 'rectangle':
-            $w = abs($sx - $ex);
-            $h = abs($sy - $ey);
-            $sx = min($sx, $ex);
-            $sy = min($sy, $ey);
-            $this->Rect($sx, $sy, $w, $h);
-            break;
-        case 'highlight':
-            $w = abs($sx - $ex);
-            $h = 12.0 * $this->scale;
-            $sx = min($sx, $ex);
-            $sy = min($sy, $ey) - $h * 0.5;
-            $imgfile = $CFG->dirroot.'/mod/assign/feedback/pdf/pix/trans'.$colour.'.png';
-            $this->Image($imgfile, $sx, $sy, $w, $h);
-            break;
-        case 'freehand':
-            if ($path) {
-                $scalepath = array();
-                foreach ($path as $point) {
-                    $scalepath[] = intval($point) * $this->scale;
-                }
-                $this->PolyLine($scalepath, 'S');
-            }
-            break;
-        case 'stamp':
-            if (!$imgfile = self::get_stamp_file($path)) {
+            case 'oval':
+                $rx = abs($sx - $ex) / 2;
+                $ry = abs($sy - $ey) / 2;
+                $sx = min($sx, $ex) + $rx;
+                $sy = min($sy, $ey) + $ry;
+                $this->Ellipse($sx, $sy, $rx, $ry);
                 break;
-            }
-            $w = abs($sx - $ex);
-            $h = abs($sy - $ey);
-            $sx = min($sx, $ex);
-            $sy = min($sy, $ey);
-            $this->Image($imgfile, $sx, $sy, $w, $h);
-            break;
-        default: // Line
-            $this->Line($sx, $sy, $ex, $ey);
-            break;
+            case 'rectangle':
+                $w = abs($sx - $ex);
+                $h = abs($sy - $ey);
+                $sx = min($sx, $ex);
+                $sy = min($sy, $ey);
+                $this->Rect($sx, $sy, $w, $h);
+                break;
+            case 'highlight':
+                $w = abs($sx - $ex);
+                $h = 12.0 * $this->scale;
+                $sx = min($sx, $ex);
+                $sy = min($sy, $ey) - $h * 0.5;
+                $imgfile = $CFG->dirroot.'/mod/assign/feedback/pdf/pix/trans'.$colour.'.png';
+                $this->Image($imgfile, $sx, $sy, $w, $h);
+                break;
+            case 'freehand':
+                if ($path) {
+                    $scalepath = array();
+                    foreach ($path as $point) {
+                        $scalepath[] = intval($point) * $this->scale;
+                    }
+                    $this->PolyLine($scalepath, 'S');
+                }
+                break;
+            case 'stamp':
+                if (!$imgfile = self::get_stamp_file($path)) {
+                    break;
+                }
+                $w = abs($sx - $ex);
+                $h = abs($sy - $ey);
+                $sx = min($sx, $ex);
+                $sy = min($sy, $ey);
+                $this->Image($imgfile, $sx, $sy, $w, $h);
+                break;
+            default: // Line.
+                $this->Line($sx, $sy, $ex, $ey);
+                break;
         }
         $this->SetDrawColor(0, 0, 0);
         $this->SetLineWidth(1.0 * $this->scale);
@@ -433,17 +433,18 @@ class AssignPDFLib extends FPDI {
         $generate = true;
         if (file_exists($imagefile)) {
             if (filemtime($imagefile)>filemtime($this->filename)) {
-                // Make sure the image is newer than the PDF file
+                // Make sure the image is newer than the PDF file.
                 $generate = false;
             }
         }
 
         if ($generate) {
-            // Use ghostscript to generate an image of the specified page
+            // Use ghostscript to generate an image of the specified page.
             $gsexec = get_config('assignfeedback_pdf', 'gspath');
             $imageres = 100;
             $filename = $this->filename;
-            $command = "$gsexec -q -sDEVICE=png16m -dSAFER -dBATCH -dNOPAUSE -r$imageres -dFirstPage=$pageno -dLastPage=$pageno -dGraphicsAlphaBits=4 -dTextAlphaBits=4 -sOutputFile=\"$imagefile\" \"$filename\" 2>&1";
+            $command = "$gsexec -q -sDEVICE=png16m -dSAFER -dBATCH -dNOPAUSE -r$imageres -dFirstPage=$pageno -dLastPage=$pageno ".
+                "-dGraphicsAlphaBits=4 -dTextAlphaBits=4 -sOutputFile=\"$imagefile\" \"$filename\" 2>&1";
             $result = exec($command);
             if (!file_exists($imagefile)) {
                 $fullerror = 'Command:'.htmlspecialchars($command).'<br/>';
@@ -460,24 +461,24 @@ class AssignPDFLib extends FPDI {
      * @param stored_file $file
      * @return bool false if the PDF is invalid, true if the PDF is valid (or has been converted)
      */
-    static function ensure_pdf_compatible(stored_file $file) {
+    public static function ensure_pdf_compatible(stored_file $file) {
         global $CFG;
 
         $fp = $file->get_content_file_handle();
         $ident = fread($fp, 10);
         if (substr_compare('%PDF-', $ident, 0, 5) !== 0) {
-            return false; // This is not a PDF file at all
+            return false; // This is not a PDF file at all.
         }
-        $ident = substr($ident, 5); // Remove the '%PDF-' part
-        $ident = explode('\x0A', $ident); // Truncate to first '0a' character
-        list($major, $minor) = explode('.', $ident[0]); // Split the major / minor version
+        $ident = substr($ident, 5); // Remove the '%PDF-' part.
+        $ident = explode('\x0A', $ident); // Truncate to first '0a' character.
+        list($major, $minor) = explode('.', $ident[0]); // Split the major / minor version.
         $major = intval($major);
         $minor = intval($minor);
         if ($major == 0 || $minor == 0) {
-            return false; // Not a valid PDF version number
+            return false; // Not a valid PDF version number.
         }
         if ($major = 1 && $minor<=4) {
-            return true; // We can handle this version - nothing else to do
+            return true; // We can handle this version - nothing else to do.
         }
 
         $temparea = $CFG->dataroot.'/temp/assignsubmission_pdf';
@@ -491,13 +492,13 @@ class AssignPDFLib extends FPDI {
             }
         }
 
-        $file->copy_content_to($tempsrc); // Copy the file
+        $file->copy_content_to($tempsrc); // Copy the file.
 
         $gsexec = get_config('assignfeedback_pdf', 'gspath');
         $command = "$gsexec -q -sDEVICE=pdfwrite -dBATCH -dNOPAUSE -sOutputFile=\"$tempdst\" \"$tempsrc\" 2>&1";
         exec($command);
         if (!file_exists($tempdst)) {
-            return false; // Something has gone wrong in the conversion
+            return false; // Something has gone wrong in the conversion.
         }
 
         $fileinfo = array(
@@ -508,10 +509,10 @@ class AssignPDFLib extends FPDI {
             'filename' => $file->get_filename(),
             'filepath' => $file->get_filepath()
         );
-        $file->delete(); // Delete the original file
+        $file->delete(); // Delete the original file.
         $fs = get_file_storage();
-        $fs->create_file_from_pathname($fileinfo, $tempdst); // Create replacement file
-        @unlink($tempsrc); // Delete the temporary files
+        $fs->create_file_from_pathname($fileinfo, $tempdst); // Create replacement file.
+        @unlink($tempsrc); // Delete the temporary files.
         @unlink($tempdst);
 
         return true;

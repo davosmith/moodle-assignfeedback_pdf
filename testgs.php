@@ -43,20 +43,20 @@ if (optional_param('sendimage', false, PARAM_BOOL)) {
 $result = AssignPDFLib::test_gs_path();
 
 switch ($result->status) {
-case AssignPDFLib::GSPATH_OK:
-    $msg = get_string('test_ok', 'assignfeedback_pdf');
-    $msg .= html_writer::empty_tag('br');
-    $imgurl = new moodle_url($PAGE->url, array('sendimage' => 1));
-    $msg .= html_writer::empty_tag('img', array('src' => $imgurl));
-    break;
+    case AssignPDFLib::GSPATH_OK:
+        $msg = get_string('test_ok', 'assignfeedback_pdf');
+        $msg .= html_writer::empty_tag('br');
+        $imgurl = new moodle_url($PAGE->url, array('sendimage' => 1));
+        $msg .= html_writer::empty_tag('img', array('src' => $imgurl));
+        break;
 
-case AssignPDFLib::GSPATH_ERROR:
-    $msg = $result->message;
-    break;
+    case AssignPDFLib::GSPATH_ERROR:
+        $msg = $result->message;
+        break;
 
-default:
-    $msg = get_string("test_{$result->status}", 'assignfeedback_pdf');
-    break;
+    default:
+        $msg = get_string("test_{$result->status}", 'assignfeedback_pdf');
+        break;
 }
 
 $returl = new moodle_url('/admin/settings.php', array('section' => 'assignfeedback_pdf'));

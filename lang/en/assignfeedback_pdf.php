@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -25,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-//$string['allowpdffeedback'] = 'Enabled';
 $string['addquicklist'] = 'Add to comment Quicklist';
+$string['allowpdffeedback'] = 'Enabled';
 $string['annotatesubmission'] = 'Annotate submission';
 $string['annotationhelp'] = 'Annotation help';
 $string['annotationhelp_text'] = '<table>

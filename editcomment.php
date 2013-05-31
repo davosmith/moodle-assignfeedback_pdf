@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -36,7 +35,9 @@ $action = optional_param('action', null, PARAM_TEXT);
 $rownum = optional_param('rownum', null, PARAM_INT);
 $returnparams = optional_param('returnparams', null, PARAM_TEXT);
 
-$url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('submissionid'=>$submissionid, 'pageno'=>$pageno, 'id' => $id));
+$url = new moodle_url('/mod/assign/feedback/pdf/editcomment.php', array('submissionid'=>$submissionid,
+                                                                       'pageno'=>$pageno,
+                                                                       'id' => $id));
 if (!is_null($rownum)) {
     $url->param('rownum', $rownum);
 }
