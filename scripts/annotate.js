@@ -1801,6 +1801,7 @@ function uploadpdf_init(Y, server_config, userpreferences) {
 
             function startjs() {
                 server.initialize(server_config);
+                server_config.deleteicon = M.util.image_url('t/delete', 'moodle');
 
                 var showPreviousMenu, pageno, sel, selpage, btn, helppanel;
 
