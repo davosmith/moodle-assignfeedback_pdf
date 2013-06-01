@@ -49,6 +49,12 @@ $string['annotationhelp_text'] = '<table>
  <tr><td>{$a->erase}</td><td>e</td><td>Click in or on an annotation (not a comment) to erase it</td></tr>
  <tr><td>Quicklist</td><td>&nbsp;</td><td>Right-click on the page to insert a comment previously saved to the \'quicklist\'. Use the \'x\' to delete unwanted quicklist items.</td></tr>
  </table>';
+$string['badaction'] = 'Invalid action \'{$a}\'';
+$string['badannotationid'] = 'Annotation id is for a different submission or page';
+$string['badcommentid'] = 'Comment id is for a different submission or page';
+$string['badcoordinate'] = 'Odd number of coordinates in line - should be 2 coordinates per point';
+$string['badpath'] = 'Path point is invalid';
+$string['badtype'] = 'Invalid type {$a}';
 $string['backtocommentlist'] = 'Back to comment list';
 $string['cancel'] = 'Cancel';
 $string['clearimagecache'] = 'Clear page image cache';
@@ -90,6 +96,9 @@ $string['keyboardnext'] = 'n - next page';
 $string['keyboardprev'] = 'p - previous page';
 $string['linecolour'] = '{,} - line colour';
 $string['lineicon'] = 'l - lines';
+$string['missingannotationdata'] = 'Missing annotation data';
+$string['missingcommentdata'] = 'Missing comment data';
+$string['missingquicklistdata'] = 'Missing quicklist data';
 $string['next'] = 'Next';
 $string['nocomments'] = 'No comments';
 $string['okagain'] = 'Click OK to try again';
@@ -97,6 +106,8 @@ $string['openlinknewwindow'] = 'Open links in new window';
 $string['opennewwindow'] = 'Open this page in a new window';
 $string['ovalicon'] = 'o - ovals';
 $string['pagenumber'] = 'Page number';
+$string['pagenumbertoobig'] = 'Requested page number is bigger than the page count ({$a->pageno} > {$a->pagecount})';
+$string['pagenumbertoosmall'] = 'Requested page number is too small (<1)';
 $string['pdf'] = 'PDF feedback';
 $string['pluginname'] = 'PDF feedback';
 $string['previousnone'] = 'None';

@@ -1199,7 +1199,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $comment->submissionid = $submission->id;
 
             if (($comment->posx < 0) || ($comment->posy < 0) || ($comment->width < 0) || ($comment->rawtext === null)) {
-                throw new moodle_exception('Missing comment data', 'assignfeedback_pdf');
+                throw new moodle_exception('missingcommentdata', 'assignfeedback_pdf');
             }
 
             if ($comment->id === -1) {
@@ -1227,7 +1227,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                     unset($comment->id);
                     $comment->id = $DB->insert_record('assignfeedback_pdf_cmnt', $comment);
                 } else if (($oldcomment->submissionid != $submission->id) || ($oldcomment->pageno != $pageno)) {
-                    throw new moodle_exception('Comment id is for a different submission or page', 'assignfeedback_pdf');
+                    throw new moodle_exception('badcommentid', 'assignfeedback_pdf');
                 } else {
                     $DB->update_record('assignfeedback_pdf_cmnt', $comment);
                 }
@@ -1304,7 +1304,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $item->colour = optional_param('colour', 'yellow', PARAM_TEXT);
 
             if ($item->width < 0 || empty($item->text)) {
-                throw new moodle_exception('Missing quicklist data', 'assignfeedback_pdf');
+                throw new moodle_exception('missingquicklistdata', 'assignfeedback_pdf');
             }
 
             $item->id = $DB->insert_record('assignfeedback_pdf_qcklst', $item);
@@ -1319,14 +1319,14 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         } else if ($action == 'getimageurl') {
 
             if ($pageno < 1) {
-                throw new moodle_exception('Requested page number is too small (< 1)', 'assignfeedback_pdf');
+                throw new moodle_exception('pagenumbertoosmall', 'assignfeedback_pdf');
             }
 
             list($imageurl, $imgwidth, $imgheight, $pagecount) = $this->get_page_image($pageno, $submission);
 
             if ($pageno > $pagecount) {
-                throw new moodle_exception('Requested page number is bigger than the page count ('.$pageno.' > '.$pagecount.')',
-                           'assignfeedback_pdf');
+                $info = (object)array('pageno' => $pageno, 'pagecount' => $pagecount);
+                throw new moodle_exception('pagenumbertoobig', 'assignfeedback_pdf', $info);
             }
 
             $resp['image'] = new stdClass();
@@ -1349,21 +1349,21 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $annotation->submissionid = $submission->id;
 
             if (!in_array($annotation->type, array('freehand', 'line', 'oval', 'rectangle', 'highlight', 'stamp'))) {
-                throw new moodle_exception("Invalid type {$annotation->type}", 'assignfeedback_pdf');
+                throw new moodle_exception("badtype", 'assignfeedback_pdf', $annotation->type);
             }
 
             if ($annotation->type == 'freehand') {
                 if (!$annotation->path) {
-                    throw new moodle_exception('Missing annotation data', 'assignfeedback_pdf');
+                    throw new moodle_exception('missingannotationdata', 'assignfeedback_pdf');
                 }
                 // Double-check path is valid list of points.
                 $points = explode(',', $annotation->path);
                 if (count($points)%2 != 0) {
-                    throw new moodle_exception('Odd number of coordinates in line - should be 2 coordinates per point', 'assignfeedback_pdf');
+                    throw new moodle_exception('badcoordinate', 'assignfeedback_pdf');
                 }
                 foreach ($points as $point) {
                     if (!preg_match('/^\d+$/', $point)) {
-                        throw new moodle_exception('Path point is invalid', 'assignfeedback_pdf');
+                        throw new moodle_exception('badpath', 'assignfeedback_pdf');
                     }
                 }
             } else {
@@ -1372,7 +1372,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 }
                 if (($annotation->startx < 0) || ($annotation->starty < 0) || ($annotation->endx < 0) || ($annotation->endy < 0)) {
                     if ($annotation->id < 0) {
-                        throw new moodle_exception('Missing annotation data', 'assignfeedback_pdf');
+                        throw new moodle_exception('missingannotationdata', 'assignfeedback_pdf');
                     } else {
                         // OK not to send these when updating a line.
                         unset($annotation->startx);
@@ -1392,7 +1392,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                     unset($annotation->id);
                     $annotation->id = $DB->insert_record('assignfeedback_pdf_annot', $annotation);
                 } else if (($oldannotation->submissionid != $submission->id) || ($oldannotation->pageno != $pageno)) {
-                    throw new moodle_exception('Annotation id is for a different submission or page', 'assignfeedback_pdf');
+                    throw new moodle_exception('badannotationid', 'assignfeedback_pdf');
                 } else {
                     $DB->update_record('assignfeedback_pdf_annot', $annotation);
                 }
@@ -1407,7 +1407,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                                                                  'submissionid' => $submission->id,
                                                                  'pageno' => $pageno));
         } else {
-            throw new moodle_exception('Invalid action "'.$action.'"', 'assignfeedback_pdf');
+            throw new moodle_exception('badaction', 'assignfeedback_pdf', $action);
         }
 
         echo json_encode($resp);
