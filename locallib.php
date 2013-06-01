@@ -61,7 +61,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $result = AssignPDFLib::test_gs_path(false);
             $gspathok = ($result->status == AssignPDFLib::GSPATH_OK);
             if (!$gspathok && $this->is_visible()) {
-                // gspath is invalid, so the plugin should be globally disabled.
+                // Setting 'gspath' is invalid, so the plugin should be globally disabled.
                 set_config('disabled', true, $this->get_subtype() . '_' . $this->get_type());
             }
         }
@@ -641,7 +641,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $saveopts .= html_writer::end_tag('form');
         }
 
-        // 'Download original' button.
+        // Output the 'Download original' button.
         $pdfurl = moodle_url::make_pluginfile_url($context->id, 'assignsubmission_pdf', ASSIGNSUBMISSION_PDF_FA_FINAL,
                                                   $submission->id, $this->get_subfolder(), ASSIGNSUBMISSION_PDF_FILENAME, true);
         $downloadorig = get_string('downloadoriginal', 'assignfeedback_pdf');
@@ -999,7 +999,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             echo html_writer::link($pdfurl, get_string('downloadoriginal', 'assignsbmission_pdf'));
         }
 
-        // 'Open in new window' check box.
+        // Output the 'Open in new window' check box.
         $checked = "checked='checked'";
         if (array_key_exists('uploadpdf_commentnewwindow', $_COOKIE)) {
             if (!$_COOKIE['uploadpdf_commentnewwindow']) {
