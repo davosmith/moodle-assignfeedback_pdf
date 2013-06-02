@@ -203,7 +203,7 @@ class AssignPDFLib extends FPDI {
      * Copy all the remaining pages in the file
      */
     public function copy_remaining_pages() {
-        while ($this->copy_page());
+        while ($this->copy_page()); // Not found a way to stop codechecker complaing about this line.
     }
 
     /**

@@ -1468,7 +1468,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         $deletetime = time() - (3 * WEEKSECS);
 
-        // Ideally we would use: $fs->get_area_files('assignfeedback_pdf', 'image');
+        // Ideally we would use: $fs->get_area_files
         // However, this does not allow retrieval of files by timemodified.
         $to_clear = $DB->get_records_select('files', "component = 'assignfeedback_pdf' AND filearea = 'image' AND timemodified < ?",
                                             array($deletetime));
