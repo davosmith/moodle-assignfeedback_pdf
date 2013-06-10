@@ -503,19 +503,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 $DB->update_record('assignsubmission_pdf', $updated);
 
                 // Make sure there is a grade record for this submission (or it won't appear in the overview page).
-                if ($user && !$DB->record_exists('assign_grades',
-                                                 array('assignment' => $this->assignment->get_instance()->id,
-                                                      'userid' => $user->id))) {
-                    $ins = new stdClass();
-                    $ins->assignment = $this->assignment->get_instance()->id;
-                    $ins->userid = $user->id;
-                    $ins->timecreated = time();
-                    $ins->timemodified = time();
-                    $ins->grader = $USER->id;
-                    $ins->grade = null;
-                    $ins->locked = 0;
-                    $ins->mailed = 0;
-                    $DB->insert_record('assign_grades', $ins);
+                if ($user) {
+                    $this->assignment->get_user_grade($user->id, true, $submission->attemptnumber);
+                } else if ($group) {
+                    foreach (groups_get_members($group->id, 'u.id') as $u) {
+                        $this->assignment->get_user_grade($u->id, true, $submission->attemptnumber);
+                    }
                 }
 
                 redirect($this->return_url());
