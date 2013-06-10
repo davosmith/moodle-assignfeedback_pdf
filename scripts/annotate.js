@@ -201,7 +201,7 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                         itempage = parseInt(details[0], 10);
                         itemid = parseInt(details[1], 10);
                         if (itemid === 0) { // 'No comments' entry.
-                            node.setAttribute('value', itemvalue);
+                            node.setAttribute('value', value);
                             node.setContent(text);
                             addeditem = true;
                         } else if (itemid === id) { // Update existing entry.
