@@ -73,8 +73,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $gspathok;
     }
 
+    /**
+     * Find the current row from the assignment 'return_params'
+     * @return bool
+     */
     protected function get_rownum() {
-        // Find the current row from the assignment 'return_params'.
         $returnaction = $this->assignment->get_return_action();
         if (!in_array($returnaction, array('grade', 'nextgrade', 'previousgrade'))) {
             return false;
@@ -94,6 +97,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $rownum;
     }
 
+    /**
+     * Work out the userid from the return parameters.
+     * @return bool
+     */
     protected function get_userid_because_assign_really_does_not_want_to_tell_me() {
         $rownum = $this->get_rownum();
         if ($rownum === false) {
@@ -110,6 +117,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $userid;
     }
 
+    /**
+     * Get the user submission and team submission objects for the given user.
+     * @param $userid
+     * @return array - [$submission, $teamsubmission]
+     */
     protected function get_submission($userid) {
         $submission = $this->assignment->get_user_submission($userid, false);
         $teamsubmission = false;
@@ -181,10 +193,20 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $this->response_link($submission, $teamsubmission);
     }
 
+    /**
+     * This plugin does support quick grading.
+     * @return bool
+     */
     public function supports_quickgrading() {
         return true;
     }
 
+    /**
+     * Return the annotation and response links
+     * @param int $userid
+     * @param mixed $grade
+     * @return string
+     */
     public function get_quickgrading_html($userid, $grade) {
         list($submission, $teamsubmission) = $this->get_submission($userid);
 
@@ -197,6 +219,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $annotate.'<br />'.$resp;
     }
 
+    /**
+     * Return a link to annotate the given submission (uses the 'team submission' if set, otherwise uses
+     * the individual submission)
+     * @param $submission
+     * @param $teamsubmission
+     * @return string
+     */
     protected function annotate_link($submission, $teamsubmission) {
         global $DB, $OUTPUT;
         if ($teamsubmission) {
@@ -237,6 +266,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return '';
     }
 
+    /**
+     * Encode the 'return parameters', so they can be passed on to the annotation page.
+     * @return string
+     */
     protected function encode_return_params() {
         $returnparams = $this->assignment->get_return_params();
         if ($action = $this->assignment->get_return_action()) {
@@ -245,6 +278,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return http_build_query($returnparams);
     }
 
+    /**
+     * Return the links to view / download the response file
+     * @param $submission
+     * @param $teamsubmission
+     * @return string
+     */
     protected function response_link($submission, $teamsubmission) {
         global $DB, $OUTPUT;
 
@@ -369,6 +408,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return true;
     }
 
+    /**
+     * Output the page for annotating the PDF
+     * @param int $submissionid - the submission to annotate
+     * @param int $pageno - the page to start on
+     * @param bool $enableedit - true if the editing interface should be enabled (overridden if the user does not
+     *                           have the required capabilities.
+     */
     public function edit_comment_page($submissionid, $pageno, $enableedit = true) {
         global $CFG, $DB, $OUTPUT, $PAGE, $USER;
 
@@ -602,6 +648,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         echo $OUTPUT->footer();
     }
 
+    /**
+     * Extract the URL to return to when annotation is complete.
+     * @return moodle_url
+     */
     protected function return_url() {
         $cm = $this->assignment->get_course_module();
         $redir = new moodle_url('/mod/assign/view.php', array('id' => $cm->id));
@@ -616,6 +666,15 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $redir;
     }
 
+    /**
+     * Return the controls toolbar
+     * @param $submission
+     * @param $user
+     * @param $pageno
+     * @param $enableedit
+     * @param $showprevious
+     * @return string
+     */
     protected function output_controls($submission, $user, $pageno, $enableedit, $showprevious) {
         global $PAGE, $DB, $OUTPUT;
 
@@ -744,6 +803,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $out;
     }
 
+    /**
+     * Return the next/previous buttons + drop-down page list
+     * @param $submission
+     * @param $pageno
+     * @return string
+     */
     protected function output_pageselector($submission, $pageno) {
         $prevstr = '&lt;-- '.get_string('previous', 'assignfeedback_pdf');
         $prevtipstr = get_string('keyboardprev', 'assignfeedback_pdf');
@@ -765,6 +830,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $pageselector;
     }
 
+    /**
+     * Return the second row of the controls: colour + tool selectors.
+     * @return string
+     */
     protected function output_toolbar() {
         global $OUTPUT;
 
@@ -830,6 +899,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return $tools;
     }
 
+    /**
+     * Return a unique path for writing temporary files to
+     * @param $submissionid
+     * @return string
+     */
     protected function get_temp_folder($submissionid) {
         global $CFG, $USER;
 
@@ -858,9 +932,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
     }
 
     /**
+     * Generate a page image (if it doesn't exist already) and return the details
      * @param int $pageno
      * @param object $submission
-     * @return array|mixed
+     * @return array|mixed - [ image url, width, height, total page count ]
      */
     protected function get_page_image($pageno, $submission) {
         global $CFG, $DB;
@@ -957,6 +1032,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return array(null, 0, 0, $pagecount);
     }
 
+    /**
+     * Output a list of comments written on a previous submission.
+     * @param $submissionid
+     */
     public function show_previous_comments($submissionid) {
         global $DB, $PAGE, $OUTPUT;
 
@@ -1042,6 +1121,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         echo $OUTPUT->footer();
     }
 
+    /**
+     * Generate a new PDF with the original submission + annotations
+     * @param $submissionid
+     * @return bool - true if successful
+     */
     public function create_response_pdf($submissionid) {
         global $DB;
 
@@ -1145,6 +1229,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         return true;
     }
 
+    /**
+     * Process the AJAX requests - retrieve/update comments, annotations, etc.
+     * @param int $submissionid
+     * @param int $pageno
+     */
     public function update_comment_page($submissionid, $pageno) {
         global $USER, $DB;
 
@@ -1413,46 +1502,18 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         echo json_encode($resp);
     }
 
-    protected function get_resubmission_number() {
-        global $DB;
-
-        static $resub = null;
-
-        if (!is_null($resub)) {
-            return $resub;
-        }
-
-        // Work around not being able to directly get the config from the 'assignsubmission_pdf' plugin.
-        if (!$this->assignment->has_instance()) {
-            throw new coding_exception("Should not be asking for resubmission number without assignment instance");
-        }
-
-        $assignment = $this->assignment->get_instance();
-        $resub = $DB->get_field('assign_plugin_config', 'value', array('assignment' => $assignment->id,
-                                                                 'subtype' => 'submission',
-                                                                 'plugin' => 'assignsubmission_pdf',
-                                                                 'name' => 'resubmission'));
-        if ($resub === false) {
-            $resub = 1;
-            $ins = new stdClass();
-            $ins->value = $resub;
-            $ins->name = 'resubmission';
-            $ins->plugin = 'assignsubmission_pdf';
-            $ins->subtype = 'submission';
-            $ins->assignment = $assignment->id;
-            $DB->insert_record('assign_plugin_config', $ins);
-        }
-
-        return $resub;
+    /**
+     * Return the subfolder that contains the details for this submission (was intended to handle
+     * resubmissions, but that is already implemented for all assignment types in Moodle 2.5)
+     * @return string
+     */
+    protected function get_subfolder() {
+        return '/1/';
     }
 
-    protected function get_subfolder($resubmission = null) {
-        if (is_null($resubmission)) {
-            $resubmission = $this->get_resubmission_number();
-        }
-        return '/'.$resubmission.'/';
-    }
-
+    /**
+     * Delete old page image files after 3 weeks.
+     */
     public static function cron() {
         global $DB;
 
@@ -1489,6 +1550,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         set_config('lastcron', $lastcron, 'assignfeedback_pdf');
     }
 
+    /**
+     * Delete all generated images for a particular submission.
+     * (Intended for use if there is a problem with the generated images).
+     * @param $submissionid
+     * @param $nextaction
+     */
     public function clear_image_cache($submissionid, $nextaction) {
         global $PAGE;
 
@@ -1503,6 +1570,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         redirect($redir);
     }
 
+    /**
+     * Output an image browser for all the pages in the given submission.
+     * (Intended for debugging purposes)
+     * @param $submissionid
+     * @param $pageno
+     */
     public function browse_images($submissionid, $pageno) {
         global $DB, $OUTPUT, $PAGE;
 
