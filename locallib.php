@@ -28,6 +28,8 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot.'/mod/assign/feedback/pdf/lib.php');
 
+require_once($CFG->dirroot.'/mod/assign/feedback/pdf/debuglog.php');
+
 define('ASSIGNFEEDBACK_PDF_MAXSUMMARYFILES', 5);
 
 
@@ -129,6 +131,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $teamsubmission = $this->assignment->get_group_submission($userid, 0, false);
         }
 
+        debuglog("Submission id: ".($submission ? $submission->id : 'none').($teamsubmission ? "; team submission id: {$teamsubmission->id}" : ''));
+
         return array($submission, $teamsubmission);
     }
 
@@ -159,6 +163,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return bool true if elements were added to the form
      */
     public function get_form_elements_for_user($grade, MoodleQuickForm $mform, stdClass $data, $userid) {
+        debuglog("Add links to grading form for user {$userid}");
         list($submission, $teamsubmission) = $this->get_submission($userid);
         $annotatelink = $this->annotate_link($submission, $teamsubmission);
         if ($annotatelink) {
@@ -179,6 +184,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view_summary(stdClass $grade, & $showviewlink) {
+        debuglog("View feedback summary for user {$grade->userid}");
         list($submission, $teamsubmission) = $this->get_submission($grade->userid);
         return $this->response_link($submission, $teamsubmission);
     }
@@ -189,6 +195,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function view(stdClass $grade) {
+        debuglog("View feedback for  user {$grade->userid}");
         list($submission, $teamsubmission) = $this->get_submission($grade->userid);
         return $this->response_link($submission, $teamsubmission);
     }
@@ -208,6 +215,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * @return string
      */
     public function get_quickgrading_html($userid, $grade) {
+        debuglog("Output quickgrading for user: {$userid}");
         list($submission, $teamsubmission) = $this->get_submission($userid);
 
         $annotate = $this->annotate_link($submission, $teamsubmission);
@@ -232,11 +240,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $realsubmission = $teamsubmission;
         } else {
             if (!empty($this->assignment->get_instance()->teamsubmission)) {
+                debuglog("No team submission yet => no annotation link");
                 return ''; // This is a team assignment, but there isn't a team submission yet.
             }
             $realsubmission = $submission;
         }
         if (!$realsubmission || $realsubmission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
+            debuglog("No submission => no annotation link");
             return '';
         }
         $context = $this->assignment->get_context();
@@ -246,6 +256,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 return get_string('emptysubmission', 'assignfeedback_pdf');
             }
             if ($status != ASSIGNSUBMISSION_PDF_STATUS_SUBMITTED && $status != ASSIGNSUBMISSION_PDF_STATUS_RESPONDED) {
+                debuglog("Submission not submitted for marking => no annotation link");
                 return ''; // Not yet submitted for marking.
             }
             // Add 'annotate submission' link.
@@ -260,8 +271,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
             $ret = $OUTPUT->pix_icon('annotate', '', 'assignfeedback_pdf').' ';
             $ret .= html_writer::link($url, get_string('annotatesubmission', 'assignfeedback_pdf'));
+
+            debuglog("Annotation link generated: {$ret}");
+
             return $ret;
         }
+
+        debuglog("Not allowed to grade => no annotation link");
 
         return '';
     }
@@ -291,11 +307,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $realsubmission = $teamsubmission;
         } else {
             if (!empty($this->assignment->get_instance()->teamsubmission)) {
+                debuglog("No team submission yet => no response link");
                 return ''; // This is a team assignment, but there is no team submission yet.
             }
             $realsubmission = $submission;
         }
         if (!$realsubmission || $realsubmission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
+            debuglog("No submission => no response link");
             return '';
         }
         $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $realsubmission->id));
@@ -320,8 +338,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $ret .= html_writer::empty_tag('br');
             $ret .= $OUTPUT->pix_icon('t/preview', '').' ';
             $ret .= html_writer::link($viewurl, get_string('viewresponse', 'assignfeedback_pdf'));
+            debuglog("Response link generated: {$ret}");
             return $ret;
         }
+
+        debuglog("No response generated yet => no response link");
         return '';
     }
 
@@ -349,9 +370,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $submission = $teamsubmission;
         }
         if ($submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
+            debuglog("draft submission => empty");
             return true;
         }
         $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $submission->id));
+        debuglog("Check empty userid {$grade->userid}: status = {$status}");
         return $status != ASSIGNSUBMISSION_PDF_STATUS_RESPONDED;
     }
 
@@ -425,9 +448,11 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         if (!empty($assignment->teamsubmission)) {
             $group = $DB->get_record('groups', array('id' => $submission->groupid), '*', MUST_EXIST);
             $user = null;
+            debuglog("Annotate submission {$submissionid} for groupid {$group->id} editing: ".($enableedit ? 'on' : 'off'));
         } else {
             $user = $DB->get_record('user', array('id' => $submission->userid), '*', MUST_EXIST);
             $group = null;
+            debuglog("Annotate submission {$submissionid} for userid {$user->id} editing: ".($enableedit ? 'on' : 'off'));
         }
         $params = array('assignment' => $assignment->id, 'submission' => $submission->id);
         $submissionpdf = $DB->get_record('assignsubmission_pdf', $params, '*', MUST_EXIST);
@@ -490,24 +515,32 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         // Close the window (if the user clicks on 'savedraft').
         if ($enableedit && $savedraft) {
+            debuglog("Save draft and exit");
             redirect($this->return_url());
         }
 
         // Generate the response PDF and cose the window, if requested.
         if ($enableedit && $generateresponse) {
+            debuglog("Attempting to generate response PDF");
             if ($this->create_response_pdf($submission->id)) {
+                debuglog("Response PDF generated successfully");
+
                 // Update the submission status.
                 $updated = new stdClass();
                 $updated->id = $submissionpdf->id;
                 $updated->status = ASSIGNSUBMISSION_PDF_STATUS_RESPONDED;
                 $DB->update_record('assignsubmission_pdf', $updated);
 
+                debuglog("Status of assignsubmission_pdf record {$submissionpdf->id} set to 'responded' (2)");
+
                 // Make sure there is a grade record for this submission (or it won't appear in the overview page).
                 $attemptnumber = !empty($submission->attemptnumber) ? $submission->attemptnumber : 0;
                 if ($user) {
+                    debuglog("Adding grade entry for user {$user->id}, attemptnumber {$attemptnumber} (if it doesn't already exist)");
                     $this->assignment->get_user_grade($user->id, true, $attemptnumber);
                 } else if ($group) {
-                    foreach (groups_get_members($group->id, 'u.id') as $u) {
+                    foreach (get_users_by_capability($context, 'mod/assign:submit', 'u.id,', '', '', '', $group->id) as $u) {
+                        debuglog("Adding grade entry for user {$u->id}, attemptnumber {$attemptnumber} (if it doesn't already exist)");
                         $this->assignment->get_user_grade($u->id, true, $attemptnumber);
                     }
                 }
@@ -518,6 +551,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 echo $OUTPUT->header(get_string('feedback', 'assignment').':'.
                                      format_string($this->assignment->get_instance()->name));
                 print_error('responseproblem', 'assignfeedback_pdf');
+                debuglog("Problem generating PDF");
                 die();
             }
         }
