@@ -485,8 +485,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             }
         }
 
-        $savedraft = optional_param('savedraft', null, PARAM_TEXT);
-        $generateresponse = optional_param('generateresponse', null, PARAM_TEXT);
+        $savedraft = optional_param('savedraft', false, PARAM_BOOL);
+        $generateresponse = optional_param('generateresponse', false, PARAM_BOOL);
 
         // Close the window (if the user clicks on 'savedraft').
         if ($enableedit && $savedraft) {
@@ -507,7 +507,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 if ($user) {
                     $this->assignment->get_user_grade($user->id, true, $attemptnumber);
                 } else if ($group) {
-                    foreach (groups_get_members($group->id, 'u.id') as $u) {
+                    foreach (get_users_by_capability($context, 'mod/assign:submit', 'u.id', '', '', '', $group->id) as $u) {
                         $this->assignment->get_user_grade($u->id, true, $attemptnumber);
                     }
                 }
@@ -681,12 +681,19 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $saveopts .= html_writer::start_tag('form', array('action' => $PAGE->url->out_omit_querystring(),
                                                              'method' => 'post', 'target' => '_top'));
             $saveopts .= html_writer::input_hidden_params($PAGE->url);
-            $saveopts .= html_writer::empty_tag('input', array('type' => 'image', 'name' => 'savedraft',
+            $saveopts .= html_writer::empty_tag('input', array('type' => 'hidden', 'name' => 'savedraft', 'value' => 1));
+            $saveopts .= html_writer::empty_tag('input', array('type' => 'image', 'name' => 'savedraft_btn',
                                                               'value' => 'savedraft', 'id' => 'savedraft',
                                                               'src' => $OUTPUT->pix_url('savequit', 'assignfeedback_pdf'),
                                                               'title' => get_string('savedraft', 'assignfeedback_pdf')));
+            $saveopts .= html_writer::end_tag('form');
+
             $saveopts .= "\n";
-            $saveopts .= html_writer::empty_tag('input', array('type' => 'image', 'name' => 'generateresponse',
+            $saveopts .= html_writer::start_tag('form', array('action' => $PAGE->url->out_omit_querystring(),
+                                                             'method' => 'post', 'target' => '_top'));
+            $saveopts .= html_writer::input_hidden_params($PAGE->url);
+            $saveopts .= html_writer::empty_tag('input', array('type' => 'hidden', 'name' => 'generateresponse', 'value' => 1));
+            $saveopts .= html_writer::empty_tag('input', array('type' => 'image', 'name' => 'generateresponse_btn',
                                                               'value' => 'generateresponse', 'id' => 'generateresponse',
                                                               'src' => $OUTPUT->pix_url('tostudent', 'assignfeedback_pdf'),
                                                               'title' => get_string('generateresponse', 'assignfeedback_pdf')));
