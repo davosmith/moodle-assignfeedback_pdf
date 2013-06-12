@@ -2101,8 +2101,39 @@ function uploadpdf_init(Y, server_config, userpreferences) {
                 }
             }
 
+            function add_behat_testing_form() {
+                var form = Y.Node.create('<form id="behat_add_comment_form">' +
+                    '<input type="text" id="behat_comment_at_x" value="" />' +
+                    '<input type="text" id="behat_comment_at_y" value="" />' +
+                    '<input type="text" id="behat_comment_content" value="" />' +
+                    '<input type="submit" value="Add comment" />' +
+                    '</form>');
+                Y.one('#everything').appendChild(form);
+                Y.one('#behat_add_comment_form').on('submit', function (e) {
+                    var x, y, content, pos, comment;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    x = parseInt(e.currentTarget.one('#behat_comment_at_x').get('value'), 10);
+                    y = parseInt(e.currentTarget.one('#behat_comment_at_y').get('value'), 10);
+                    content = e.currentTarget.one('#behat_comment_content').get('value');
+                    pos = {
+                        x: x,
+                        y: y
+                    };
+                    comment = makecommentbox(pos, content, 'yellow');
+                    server.updatecomment(comment);
+                });
+                Y.one('#behat_add_comment_form').on('keydown', function (e) {
+                    e.stopPropagation(); // Make sure the 'page navigation' keyboard shortcuts aren't triggered.
+                });
+            }
+
             startjs();
             initcontextmenu();
+
+            if (server_config.behattest) {
+                add_behat_testing_form();
+            }
 
             Y.one('#everythingspinner').remove(true);
             Y.one('#everything').removeClass('hidden');

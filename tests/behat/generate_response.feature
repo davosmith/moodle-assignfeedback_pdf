@@ -1,8 +1,8 @@
 @assignfeedback @assignfeedback_pdf @_only_local
 Feature: Teachers can generate a response to a PDF submitted by a student
-  In order to provide feedback to students
+  In order to provide feedback to the student
   As a teacher
-  I need to annotate a PDF
+  I need to be able to generate a PDF
 
   @javascript
   Scenario: Student submits a PDF, the teacher generates a response and the student can then download the response

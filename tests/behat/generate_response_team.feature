@@ -1,11 +1,11 @@
-@assignfeedback @assignfeedback_pdf @_only_local @wip
-Feature: Teachers can generate a response to a PDF submitted by a student
-  In order to provide feedback to students
+@assignfeedback @assignfeedback_pdf @_only_local
+Feature: Teachers can generate a response to a PDF submitted by a group of students
+  In order to provide feedback to the students
   As a teacher
-  I need to annotate a PDF
+  I need to be able to generate a PDF
 
   @javascript
-  Scenario: Student submits a PDF, the teacher generates a response and the student can then download the response
+  Scenario: Student submits a PDF, the teacher generates a response and all students in the group can then download the response
     Given the following "courses" exists:
       | fullname | shortname | category | groupmode |
       | Course 1 | C1 | 0 | 1 |

@@ -605,6 +605,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             'blank_image' => $OUTPUT->pix_url('blank', 'assignfeedback_pdf')->out(),
             'image_path' => $CFG->wwwroot.'/mod/assign/feedback/pdf/pix/',
             'editing' => ($enableedit ? 1 : 0),
+            // This adds a form to the page to simulate clicking at positions on the PDF.
+            'behattest' => defined('BEHAT_TEST') || defined('BEHAT_SITE_RUNNING'),
         );
 
         $preferences = array(
@@ -630,9 +632,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         $jsmodule = array('name' => 'assignfeedback_pdf',
                           'fullpath' => new moodle_url('/mod/assign/feedback/pdf/scripts/annotate.js'),
-                          'requires' => array('get', 'button', 'overlay', 'dd-drag', 'dd-constrain',
-                                              'resize-plugin', 'io-base', 'json', 'panel', 'button-plugin',
-                                              'button-group', 'moodle-assignfeedback_pdf-menubutton'),
+                          'requires' => array('node', 'event', 'get', 'button', 'overlay',
+                                              'dd-drag', 'dd-constrain', 'resize-plugin', 'io-base', 'json',
+                                              'panel', 'button-plugin', 'button-group',
+                                              'moodle-assignfeedback_pdf-menubutton'),
                           'strings' => $strings,
         );
         $PAGE->requires->js_init_call('uploadpdf_init', array($config, $userpreferences), true, $jsmodule);
