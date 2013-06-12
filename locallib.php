@@ -709,6 +709,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                                                   $submission->id, $this->get_subfolder(), ASSIGNSUBMISSION_PDF_FILENAME, true);
         $downloadorig = get_string('downloadoriginal', 'assignfeedback_pdf');
         if (!$enableedit) {
+            $downloadorig = get_string('downloadresponse', 'assignfeedback_pdf');
             $pdfurl = moodle_url::make_pluginfile_url($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE,
                                                       $submission->id, $this->get_subfolder(), ASSIGNFEEDBACK_PDF_FILENAME, true);
         }
