@@ -532,7 +532,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $titlestr = get_string('nogroup', 'assignfeedback_pdf');
         }
         if (!empty($assignment->blindmarking)) {
-            $titlestr = get_string('blinkmarking', 'assign');
+            $titlestr = get_string('blindmarking', 'assign');
         }
         $PAGE->set_title(get_string('feedback', 'assignment').':'.$titlestr.':'.format_string($assignment->name));
         $PAGE->set_heading('');
