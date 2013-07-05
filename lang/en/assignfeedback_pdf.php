@@ -101,6 +101,7 @@ $string['missingcommentdata'] = 'Missing comment data';
 $string['missingquicklistdata'] = 'Missing quicklist data';
 $string['next'] = 'Next';
 $string['nocomments'] = 'No comments';
+$string['nogroup'] = 'No group';
 $string['okagain'] = 'Click OK to try again';
 $string['openlinknewwindow'] = 'Open links in new window';
 $string['opennewwindow'] = 'Open this page in a new window';

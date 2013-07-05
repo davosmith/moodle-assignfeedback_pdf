@@ -422,12 +422,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $assignment = $this->assignment->get_instance();
         $params = array('id' => $submissionid, 'assignment' => $assignment->id);
         $submission = $DB->get_record('assign_submission', $params, '*', MUST_EXIST);
-        if (!empty($assignment->teamsubmission)) {
-            $group = $DB->get_record('groups', array('id' => $submission->groupid), '*', MUST_EXIST);
-            $user = null;
-        } else {
+        $user = null;
+        $group = null;
+        if ($submission->userid) {
             $user = $DB->get_record('user', array('id' => $submission->userid), '*', MUST_EXIST);
-            $group = null;
+        } else if ($submission->groupid) {
+            $group = $DB->get_record('groups', array('id' => $submission->groupid), '*', MUST_EXIST);
         }
         $params = array('assignment' => $assignment->id, 'submission' => $submission->id);
         $submissionpdf = $DB->get_record('assignsubmission_pdf', $params, '*', MUST_EXIST);
@@ -447,7 +447,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             }
         } else {
             // Team submission.
-            if (groups_is_member($group->id)) {
+            if (!$group || groups_is_member($group->id)) {
                 if (!has_capability('mod/assign:grade', $context)) {
                     require_capability('mod/assign:submit', $context);
                     $enableedit = false;
@@ -460,7 +460,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         // Create a frameset if to handle the 'showprevious comments' sidebar.
         $showprevious = optional_param('showprevious', -1, PARAM_INT);
         if ($user && $enableedit && optional_param('topframe', false, PARAM_INT)) {
-            if ($showprevious != -1) {
+            if ($showprevious != -1 && !$assignment->blindmarking) {
                 echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">';
                 echo '<html><head><title>'.get_string('feedback', 'assign').':'.fullname($user, true).
                     ':'.format_string($assignment->name).'</title></head>';
@@ -526,8 +526,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         if ($user) {
             $titlestr = fullname($user);
-        } else {
+        } else if ($group) {
             $titlestr = format_string($group->name);
+        } else {
+            $titlestr = get_string('nogroup', 'assignfeedback_pdf');
+        }
+        if (!empty($assignment->blindmarking)) {
+            $titlestr = get_string('blinkmarking', 'assign');
         }
         $PAGE->set_title(get_string('feedback', 'assignment').':'.$titlestr.':'.format_string($assignment->name));
         $PAGE->set_heading('');
@@ -721,7 +726,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $saveopts .= html_writer::end_tag('form');
 
         // Show previous assignment.
-        if ($enableedit && $user) {
+        if (!$this->assignment->get_instance()->blindmarking && $enableedit && $user) {
             $ps_sql = "SELECT asn.id, asn.name
                        FROM {assign} asn
                        JOIN {assignsubmission_pdf} subp ON subp.assignment = asn.id
@@ -1250,12 +1255,12 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $assignment = $this->assignment->get_instance();
         $params = array('id' => $submissionid, 'assignment' => $assignment->id);
         $submission = $DB->get_record('assign_submission', $params, '*', MUST_EXIST);
-        if (!empty($assignment->teamsubmission)) {
-            $group = $DB->get_record('groups', array('id' => $submission->groupid), '*', MUST_EXIST);
-            $user = null;
-        } else {
+        $user = null;
+        $group = null;
+        if ($submission->userid) {
             $user = $DB->get_record('user', array('id' => $submission->userid), '*', MUST_EXIST);
-            $group = null;
+        } else if ($submission->groupid) {
+            $group = $DB->get_record('groups', array('id' => $submission->groupid), '*', MUST_EXIST);
         }
         $params = array('assignment' => $assignment->id, 'submission' => $submission->id);
         $submissionpdf = $DB->get_record('assignsubmission_pdf', $params, '*', MUST_EXIST);
@@ -1268,7 +1273,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             if ($user) {
                 $ownsubmission = ($user->id == $USER->id);
             } else {
-                $ownsubmission = groups_is_member($group->id);
+                $ownsubmission = !$group || groups_is_member($group->id);
             }
             if ($ownsubmission) {
                 // Students can view comments / images for their own assignment.
