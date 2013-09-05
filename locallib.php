@@ -632,7 +632,8 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             array('okagain', 'assignfeedback_pdf'),
             array('emptyquicklist', 'assignfeedback_pdf'),
             array('emptyquicklist_instructions', 'assignfeedback_pdf'),
-            array('findcommentsempty', 'assignfeedback_pdf')
+            array('findcommentsempty', 'assignfeedback_pdf'),
+            array('annotationhelp', 'assignfeedback_pdf')
         );
 
         $jsmodule = array('name' => 'assignfeedback_pdf',

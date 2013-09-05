@@ -1908,7 +1908,7 @@ function uploadpdf_init(Y, server_config, userpreferences) {
 
                     helppanel = new Y.Panel({
                         bodyContent: Y.one('#annotationhelp_text').getHTML(),
-                        headerContent: 'Help',
+                        headerContent: M.util.get_string('annotationhelp', 'assignfeedback_pdf'),
                         width: '90%',
                         zIndex: 300,
                         centered: false,
