@@ -272,6 +272,9 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      */
     protected function encode_return_params() {
         $returnparams = $this->assignment->get_return_params();
+        if (isset($returnparams['useridlistid']) && $returnparams['useridlistid'] == 0) {
+            unset($returnparams['useridlistid']);
+        }
         if ($action = $this->assignment->get_return_action()) {
             $returnparams['action'] = $this->assignment->get_return_action();
         }
