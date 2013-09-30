@@ -348,6 +348,9 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         if ($teamsubmission) {
             $submission = $teamsubmission;
         }
+        if (!$submission) {
+            return false;
+        }
         if ($submission->status == ASSIGN_SUBMISSION_STATUS_DRAFT) {
             return true;
         }
