@@ -7,6 +7,7 @@ https://github.com/davosmith/moodle-assignsubmission_pdf
 
 ==Recent changes==
 
+* 2013-10-04 - Fix: capabilities typo, grading order with 'separate groups', minor language string issue, blind marking support + better team submission support
 * 2013-06-10 - Fix minor issue with 'find comments' menu, fix feedback not being displayed to students when no grade given
 * 2013-05-31 - Fix deleting items from the quicklist, fix support for team submissions
 * 2013-05-30 - Converted YUI2 buttons to YUI3, various styling fixes
