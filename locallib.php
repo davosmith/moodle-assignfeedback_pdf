@@ -1057,7 +1057,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         global $DB, $PAGE, $OUTPUT;
 
         $context = $this->assignment->get_context();
-        require_capability('mod/assignment:grade', $context);
+        require_capability('mod/assign:grade', $context);
 
         $assignment = $this->assignment->get_instance();
         $params = array('id' => $submissionid, 'assignment' => $assignment->id);
@@ -1284,13 +1284,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             }
             if ($ownsubmission) {
                 // Students can view comments / images for their own assignment.
-                require_capability('mod/assignment:submit', $context);
+                require_capability('mod/assign:submit', $context);
             } else {
-                require_capability('mod/assignment:grade', $context);
+                require_capability('mod/assign:grade', $context);
             }
         } else {
             // All annotation requests need to have 'grade' capability.
-            require_capability('mod/assignment:grade', $context);
+            require_capability('mod/assign:grade', $context);
         }
 
         if ($action == 'update') {
