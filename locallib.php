@@ -169,7 +169,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         if ($annotatelink) {
             $mform->addElement('static', '', '', $annotatelink);
         }
-        $responselink = $this->response_link($submission, $teamsubmission);
+        $responselink = $this->response_link($submission, $teamsubmission, true);
         if ($responselink) {
             $mform->addElement('static', '', '', $responselink);
         }
@@ -302,9 +302,10 @@ class assign_feedback_pdf extends assign_feedback_plugin {
      * Return the links to view / download the response file
      * @param $submission
      * @param $teamsubmission
+     * @param bool $deletelink
      * @return string
      */
-    protected function response_link($submission, $teamsubmission) {
+    protected function response_link($submission, $teamsubmission, $deletelink = false) {
         global $DB, $OUTPUT;
 
         if ($teamsubmission) {
@@ -340,6 +341,13 @@ class assign_feedback_pdf extends assign_feedback_plugin {
             $ret .= html_writer::empty_tag('br');
             $ret .= $OUTPUT->pix_icon('t/preview', '').' ';
             $ret .= html_writer::link($viewurl, get_string('viewresponse', 'assignfeedback_pdf'));
+
+            if ($deletelink) {
+                $deleteurl = new moodle_url('/mod/assign/feedback/pdf/delete.php', $viewurl->params());
+                $ret .= html_writer::empty_tag('br');
+                $ret .= html_writer::link($deleteurl, get_string('deleteresponse', 'assignfeedback_pdf'));
+            }
+
             return $ret;
         }
         return '';
@@ -1648,6 +1656,52 @@ class assign_feedback_pdf extends assign_feedback_plugin {
 
         echo html_writer::empty_tag('br');
 
+        echo $OUTPUT->footer();
+    }
+
+    public function delete_feedback($submission) {
+        global $DB, $OUTPUT, $PAGE;
+
+        $context = $this->assignment->get_context();
+        require_capability('mod/assign:grade', $context);
+
+        $redir = $this->return_url();
+
+        if (optional_param('confirm', false, PARAM_BOOL)) {
+            require_sesskey();
+
+            $fs = get_file_storage();
+            $file = $fs->get_file($context->id, 'assignfeedback_pdf', ASSIGNFEEDBACK_PDF_FA_RESPONSE, $submission->id,
+                                  $this->get_subfolder(), ASSIGNFEEDBACK_PDF_FILENAME);
+            if ($file) {
+                $file->delete();
+            }
+
+            $status = $DB->get_field('assignsubmission_pdf', 'status', array('submission' => $submission->id));
+            if ($status == ASSIGNSUBMISSION_PDF_STATUS_RESPONDED) {
+                $DB->set_field('assignsubmission_pdf', 'status', ASSIGNSUBMISSION_PDF_STATUS_SUBMITTED, array('submission' => $submission->id));
+            }
+
+            redirect($redir);
+        }
+
+        $msginfo = new stdClass();
+        if ($submission->userid) {
+            $user = $DB->get_record('user', array('id' => $submission->userid), '*', MUST_EXIST);
+            $msginfo->username = fullname($user);
+        } else if ($submission->groupid) {
+            $group = $DB->get_record('groups', array('id' => $submission->groupid), '*', MUST_EXIST);
+            $msginfo->username = format_string($group->name);
+        } else {
+            throw new coding_exception('Submission with neither userid nor groupid');
+        }
+        $msginfo->assignmentname = format_string($this->assignment->get_instance()->name);
+        $msg = get_string('deleteresponseconfirm', 'assignfeedback_pdf', $msginfo);
+
+        $continue = new moodle_url($PAGE->url, array('confirm' => 1, 'sesskey' => sesskey()));
+
+        echo $OUTPUT->header();
+        echo $OUTPUT->confirm($msg, $continue, $redir);
         echo $OUTPUT->footer();
     }
 }

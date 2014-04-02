@@ -7,6 +7,7 @@ https://github.com/davosmith/moodle-assignsubmission_pdf
 
 ==Recent changes==
 
+* 2014-04-02 - Allow response files to be deleted
 * 2013-10-30 - Fix: support for resubmissions
 * 2013-10-15 - Moodle 2.6 compatibility fix
 * 2013-10-04 - Fix: capabilities typo, grading order with 'separate groups', minor language string issue, blind marking support + better team submission support
