@@ -24,10 +24,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2014040200;
-$plugin->release   = "2.5+ (Build 2014040200)";
+$plugin->version   = 2014040201;
+$plugin->release   = "2.5+ (Build 2014040201)";
 $plugin->requires  = 2013051400;
 $plugin->component = 'assignfeedback_pdf';
-$plugin->maturity  = MATURITY_BETA;
+$plugin->maturity  = MATURITY_STABLE;
 $plugin->cron      = 60;
 $plugin->dependencies = array('assignsubmission_pdf' => 2013061200);

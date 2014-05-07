@@ -499,7 +499,7 @@ class AssignPDFLib extends FPDI {
         $file->copy_content_to($tempsrc); // Copy the file.
 
         $gsexec = get_config('assignfeedback_pdf', 'gspath');
-        $command = "$gsexec -q -sDEVICE=pdfwrite -dBATCH -dNOPAUSE -sOutputFile=\"$tempdst\" \"$tempsrc\" 2>&1";
+        $command = "$gsexec -q -sDEVICE=pdfwrite -dBATCH -dNOPAUSE -dCompatibilityLevel=1.4 -sOutputFile=\"$tempdst\" \"$tempsrc\" 2>&1";
         exec($command);
         if (!file_exists($tempdst)) {
             return false; // Something has gone wrong in the conversion.
