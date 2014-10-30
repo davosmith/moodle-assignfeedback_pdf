@@ -1,4 +1,4 @@
-@assignfeedback @assignfeedback_pdf @_only_local @wip
+@assignfeedback @assignfeedback_pdf @_only_local
 Feature: Teachers can add comments to a PDF submitted by a student
   In order to provide feedback to students
   As a teacher
