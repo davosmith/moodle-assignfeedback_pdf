@@ -550,7 +550,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
                 redirect($this->return_url());
 
             } else {
-                echo $OUTPUT->header(get_string('feedback', 'assignment').':'.
+                echo $OUTPUT->header(get_string('feedback', 'assign').':'.
                                      format_string($this->assignment->get_instance()->name));
                 print_error('responseproblem', 'assignfeedback_pdf');
                 die();
@@ -569,7 +569,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         if (!empty($assignment->blindmarking)) {
             $titlestr = get_string('blindmarking', 'assign');
         }
-        $PAGE->set_title(get_string('feedback', 'assignment').':'.$titlestr.':'.format_string($assignment->name));
+        $PAGE->set_title(get_string('feedback', 'assign').':'.$titlestr.':'.format_string($assignment->name));
         $PAGE->set_heading('');
         $returnurl = $this->return_url();
         if (in_array($returnurl->get_param('action'), array('grading', 'grade', 'nextgrade', 'previousgrade'))) {
@@ -1098,7 +1098,7 @@ class assign_feedback_pdf extends assign_feedback_plugin {
         $cm = $this->assignment->get_course_module();
 
         $PAGE->set_pagelayout('popup');
-        $PAGE->set_title(get_string('feedback', 'assignment').':'.fullname($user, true).':'.format_string($assignment->name));
+        $PAGE->set_title(get_string('feedback', 'assign').':'.fullname($user, true).':'.format_string($assignment->name));
         $PAGE->set_heading('');
         echo $OUTPUT->header();
 
