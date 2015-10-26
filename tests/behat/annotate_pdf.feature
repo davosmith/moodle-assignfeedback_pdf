@@ -6,14 +6,14 @@ Feature: Teachers can add comments to a PDF submitted by a student
 
   @javascript
   Scenario: Student submits a PDF, the teacher can add comments to the PDF, then the teacher can view the annotate PDF
-    Given the following "courses" exists:
+    Given the following "courses" exist:
       | fullname | shortname | category | groupmode |
       | Course 1 | C1 | 0 | 1 |
-    And the following "users" exists:
+    And the following "users" exist:
       | username | firstname | lastname | email |
       | teacher1 | Teacher | 1 | teacher1@asd.com |
       | student1 | Student | 1 | student1@asd.com |
-    And the following "course enrolments" exists:
+    And the following "course enrolments" exist:
       | user | course | role |
       | teacher1 | C1 | editingteacher |
       | student1 | C1 | student |
@@ -31,7 +31,7 @@ Feature: Teachers can add comments to a PDF submitted by a student
     And I follow "Course 1"
     And I follow "Test assignment name"
     And I press "Add submission"
-    And I upload "mod/assign/feedback/pdf/tests/pdf_test1.pdf" file to "PDF submissions" filepicker
+    And I upload "mod/assign/feedback/pdf/tests/pdf_test1.pdf" file to "PDF submissions" filemanager
     And I press "Save changes"
     And I log out
     And I log in as "teacher1"
@@ -47,15 +47,15 @@ Feature: Teachers can add comments to a PDF submitted by a student
     # Add a comment to page 1.
     And I add a comment at "10" "10" containing "This is a comment on page 1"
     And I wait "2" seconds
-    And "div.comment" "css_element" should exists
+    And "div.comment" "css_element" should exist
     And I should see "This is a comment on page 1"
     # Add a comment to page 2.
     And I press "Next -->"
     And I should not see "This is a comment on page 1"
-    And "div.comment" "css_element" should not exists
+    And "div.comment" "css_element" should not exist
     And I add a comment at "20" "20" containing "Comment on page 2"
     And I wait "2" seconds
-    And "div.comment" "css_element" should exists
+    And "div.comment" "css_element" should exist
     And I should see "Comment on page 2"
     # Check the comment on page 1.
     And I press "<-- Prev"
@@ -70,13 +70,11 @@ Feature: Teachers can add comments to a PDF submitted by a student
     # View the response online + check the comments are present.
     And I follow "View response online"
     And I should see "This is a comment on page 1"
-    And I select "2" from "selectpage"
+    And I set the field "selectpage" to "2"
     And I should see "Comment on page 2"
     And I click on "#findcommentsbutton" "css_element"
     And I click on "//li[text()='1: This is a comment on page 1']" "xpath_element"
     And I should see "This is a comment on page 1"
-    And I should not see "1: This is a comment on page 1"
-    And I should not see "Comment on page 2"
     # Wait before moving on, as otherwise the DB can be torn-down whilst there is still an AJAX request pending
     # which results in an alert box (and a failed test).
     And I wait "3" seconds

@@ -41,13 +41,13 @@ class behat_assignfeedback_pdf extends behat_base {
      */
     public function i_add_a_comment_at_containing($x, $y, $content) {
         return array(
-            new Then('I fill in "behat_comment_at_x" with "'.$x.'"'),
-            new Then('I fill in "behat_comment_at_y" with "'.$y.'"'),
-            new Then('I fill in "behat_comment_content" with "'.$content.'"'),
+            new Then('I set the field "behat_comment_at_x" to "'.$x.'"'),
+            new Then('I set the field "behat_comment_at_y" to "'.$y.'"'),
+            new Then('I set the field "behat_comment_content" to "'.$content.'"'),
             new Then('I press "Add comment"'),
-            new Then('I fill in "behat_comment_at_x" with ""'),
-            new Then('I fill in "behat_comment_at_y" with ""'),
-            new Then('I fill in "behat_comment_content" with ""')
+            new Then('I set the field "behat_comment_at_x" to ""'),
+            new Then('I set the field "behat_comment_at_y" to ""'),
+            new Then('I set the field "behat_comment_content" to ""')
         );
     }
 }
