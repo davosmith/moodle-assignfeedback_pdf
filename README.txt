@@ -7,6 +7,7 @@ https://github.com/davosmith/moodle-assignsubmission_pdf
 
 ==Recent changes==
 
+* 2015-11-08 - Minor fix to behat tests
 * 2014-05-07 - Small change to possibly improve PDF compatibility in some situations
 * 2014-04-02 - Allow response files to be deleted
 * 2013-10-30 - Fix: support for resubmissions
