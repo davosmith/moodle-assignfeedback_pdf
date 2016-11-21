@@ -7,6 +7,7 @@ https://github.com/davosmith/moodle-assignsubmission_pdf
 
 ==Recent changes==
 
+* 2016-11-21 - Minor M3.2 compatibility fix (only behat affected)
 * 2016-05-20 - Fix behat tests for Moodle 3.1 compatibility
 * 2015-11-08 - Minor fix to behat tests
 * 2014-05-07 - Small change to possibly improve PDF compatibility in some situations

@@ -37,7 +37,7 @@ Feature: Teachers can add comments to a PDF submitted by a student
     And I log in as "teacher1"
     And I follow "Course 1"
     And I follow "Test assignment name"
-    When I follow "View all submissions"
+    When I click on "View all submissions" "link" in the "Administration" "block"
     And I click on "Grade" "link" in the "Student 1" "table_row"
     And I follow "Annotate submission"
     # Make sure there are no comments in the 'Find comments' menu.
